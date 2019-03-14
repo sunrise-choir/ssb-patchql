@@ -8,14 +8,14 @@ extern crate env_logger;
 extern crate juniper_warp;
 extern crate warp;
 
-use juniper::{EmptyMutation};
+use juniper::EmptyMutation;
 use warp::{http::Response, log, Filter};
 
-mod graphql;
 mod db;
+mod graphql;
 
-use graphql::root::*;
 use db::*;
+use graphql::root::*;
 
 fn main() {
     ::std::env::set_var("RUST_LOG", "warp_server");

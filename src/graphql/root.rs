@@ -1,12 +1,12 @@
 use juniper::{EmptyMutation, FieldResult, RootNode};
 
-use crate::db::Context;
 use super::author::*;
 use super::feed::*;
+use super::input_objects::*;
 use super::like::*;
 use super::post::*;
 use super::thread::*;
-use super::input_objects::*;
+use crate::db::Context;
 
 pub struct Query;
 pub struct Mutation;
@@ -14,7 +14,6 @@ pub struct Mutation;
 // A root schema consists of a query and a mutation.
 // Request queries can be executed against a RootNode.
 pub type Schema = RootNode<'static, Query, EmptyMutation<Context>>;
-
 
 graphql_object!(Query: Context |&self| {
 
@@ -52,7 +51,6 @@ graphql_object!(Query: Context |&self| {
     }
 });
 
-
 graphql_object!(
     Mutation: Context | &self | {
 
@@ -63,5 +61,3 @@ graphql_object!(
         //}
     }
 );
-
-

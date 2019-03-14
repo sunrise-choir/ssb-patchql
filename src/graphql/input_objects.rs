@@ -1,4 +1,3 @@
-
 #[derive(GraphQLEnum)]
 /// Retrieve objects that are private, public, or both.
 pub enum Privacy {
@@ -34,5 +33,3 @@ pub enum OrderBy {
     /// database, it's not supported.
     Causal,
 }
-
-
