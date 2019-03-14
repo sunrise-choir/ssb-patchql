@@ -10,55 +10,19 @@ extern crate env_logger;
 use juniper::{FieldResult, EmptyMutation, RootNode};
 use warp::{http::Response, log, Filter};
 
-#[derive(GraphQLObject, Default)]
-struct Author {
-    id: String,
-    name: String
-}
+mod db;
+mod author;
+mod feed;
+mod like;
+mod mention;
+mod post;
+mod thread;
 
-#[derive(GraphQLObject, Default)]
-struct Like {
-    author: Author,
-}
-
-#[derive(Default)]
-struct Thread {
-    id: String,
-    text: String,
-    likes: Vec<Like>,
-    author: Author,
-    posts: Vec<Post>,
-    isPrivate: bool
-}
-
-
-struct Context {
-    // Use your real database pool here.
-    //pool: DatabasePool,
-}
-
-// To make our context usable by Juniper, we have to implement a marker trait.
-impl juniper::Context for Context {}
-
-graphql_object!(Thread: Context |&self| {
-    field posts(&executor) -> Vec<Post> {
-        let database = executor.context();
-
-        vec![Post::default(), Post::default()]
-    }
-
-    field isPrivate() -> bool {self.isPrivate}
-    field id() -> &str { self.id.as_str() }
-});
-
-
-#[derive(GraphQLObject, Default)]
-struct Post {
-    id: String,
-    text: String,
-    likes: Vec<Like>,
-    author: Author,
-}
+use db::Context;
+use thread::*;
+use post::*;
+use author::*;
+use like::*;
 
 #[derive(GraphQLEnum)]
 /// Retrieve objects that are private, public, or both.
@@ -99,10 +63,6 @@ enum OrderBy {
 struct Query;
 
 graphql_object!(Query: Context |&self| {
-
-    field apiVersion() -> &str {
-        "1.0"
-    }
 
     field thread(&executor, id: String, privacy = (Privacy::Public): Privacy, orderBy = (OrderBy::Received): OrderBy) -> FieldResult<Thread> {
         let mut thread = Thread::default();
