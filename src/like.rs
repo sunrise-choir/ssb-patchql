@@ -4,5 +4,3 @@ use crate::author::*;
 pub struct Like {
     author: Author,
 }
-
-

@@ -1,6 +1,6 @@
+use crate::author::*;
 use crate::db::Context;
 use crate::like::*;
-use crate::author::*;
 use crate::post::*;
 
 #[derive(Default)]
@@ -10,7 +10,7 @@ pub struct Thread {
     pub likes: Vec<Like>,
     pub author: Author,
     pub posts: Vec<Post>,
-    pub isPrivate: bool
+    pub isPrivate: bool,
 }
 
 graphql_object!(Thread: Context |&self| {
