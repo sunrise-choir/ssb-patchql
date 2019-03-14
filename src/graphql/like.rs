@@ -3,7 +3,6 @@ use super::author::*;
 
 #[derive(Default)]
 pub struct Like {
-    author: Author,
 }
 
 graphql_object!(Like: Context |&self| {
