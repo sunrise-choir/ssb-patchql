@@ -1,5 +1,5 @@
 use crate::db::Context;
-use crate::thread::*;
+use super::thread::*;
 
 #[derive(Default)]
 pub struct Feed {

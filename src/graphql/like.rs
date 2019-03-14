@@ -1,4 +1,4 @@
-use crate::author::*;
+use super::author::*;
 
 #[derive(GraphQLObject, Default)]
 pub struct Like {

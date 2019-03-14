@@ -1,5 +1,5 @@
-use crate::author::*;
-use crate::like::*;
+use super::author::*;
+use super::like::*;
 
 #[derive(GraphQLObject, Default)]
 pub struct Post {
