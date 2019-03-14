@@ -6,6 +6,7 @@ edition = "2018"
 
 [dependencies]
 juniper = "0.11.0"
+juniper_codegen = "0.11.1"
 juniper_warp = "0.2.0"
 hyper = "0.12"
 env_logger = "0.6.1"
