@@ -23,6 +23,7 @@ use thread::*;
 use post::*;
 use author::*;
 use like::*;
+use feed::*;
 
 #[derive(GraphQLEnum)]
 /// Retrieve objects that are private, public, or both.
@@ -74,12 +75,19 @@ graphql_object!(Query: Context |&self| {
         Ok(thread)
     }
 
+    field feed(&executor) -> FieldResult<Feed> {
+        // Get the context from the executor.
+        let context = executor.context();
+        let mut feed = Feed::default();
+        Ok(feed)
+    }
+
     field post(&executor, id: String ) -> FieldResult<Post> {
         // Get the context from the executor.
         let context = executor.context();
-        let mut posts = Post::default();
-        posts.id = id;
-        Ok(posts)
+        let mut post = Post::default();
+        post.id = id;
+        Ok(post)
     }
 
     field author(&executor, id: String) -> FieldResult<Author> {
