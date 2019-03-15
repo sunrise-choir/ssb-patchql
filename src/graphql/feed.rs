@@ -1,4 +1,5 @@
 use super::thread::*;
+use super::input_objects::*;
 use crate::db::Context;
 
 #[derive(Default)]
@@ -7,7 +8,7 @@ pub struct Feed {
 }
 
 graphql_object!(Feed: Context |&self| {
-    field threads(&executor) -> Vec<Thread> {
+    field threads(&executor, order_by = (OrderBy::Received): OrderBy) -> Vec<Thread> {
         let database = executor.context();
 
         vec![Thread::default(), Thread::default()]

@@ -1,6 +1,7 @@
 use super::author::*;
 use super::like::*;
 use super::post::*;
+use super::input_objects::*;
 use crate::db::Context;
 
 #[derive(Default)]
@@ -15,7 +16,7 @@ graphql_object!(Thread: Context |&self| {
         let database = executor.context();
         Author::default()
     }
-    field posts(&executor) -> Vec<Post> {
+    field posts(&executor, order_by = (OrderBy::Received): OrderBy) -> Vec<Post> {
         let database = executor.context();
 
         vec![Post::default(), Post::default()]
