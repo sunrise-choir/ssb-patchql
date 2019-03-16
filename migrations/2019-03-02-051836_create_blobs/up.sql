@@ -1,0 +1,5 @@
+-- Your SQL goes here
+CREATE TABLE IF NOT EXISTS blobs (
+  id INTEGER PRIMARY KEY,
+  blob TEXT UNIQUE NOT NULL
+)

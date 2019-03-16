@@ -1,0 +1,5 @@
+-- Your SQL goes here
+CREATE TABLE IF NOT EXISTS keys (
+  id INTEGER PRIMARY KEY,
+  key TEXT UNIQUE NOT NULL
+)

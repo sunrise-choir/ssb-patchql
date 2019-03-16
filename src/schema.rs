@@ -78,8 +78,6 @@ table! {
         seq -> Nullable<Integer>,
         received_time -> Nullable<Double>,
         asserted_time -> Nullable<Double>,
-        root_key_id -> Nullable<Integer>,
-        fork_key_id -> Nullable<Integer>,
         author_id -> Nullable<Integer>,
         content_type -> Nullable<Text>,
         content -> Nullable<Text>,

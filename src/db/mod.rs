@@ -7,7 +7,6 @@ pub mod schema;
 pub mod models;
 
 pub struct Context {
-    // Use your real database pool here.
     pub pool: Pool<ConnectionManager<SqliteConnection>>
 }
 

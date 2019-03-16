@@ -8,6 +8,8 @@ pub struct Message {
     pub seq: Option<i32>,
     pub received_time: Option<f64>,
     pub asserted_time: Option<f64>,
+    pub root_key_id: Option<i32>,
+    pub fork_key_id: Option<i32>,
     pub author_id: Option<i32>,
     pub content_type: Option<String>,
     pub content: Option<String>,
@@ -29,6 +31,8 @@ impl Default for Message {
             seq: None,
             received_time: None,
             asserted_time: None,
+            root_key_id: None,
+            fork_key_id: None,
             author_id: None,
             content_type: None,
             content: None,
@@ -70,7 +74,8 @@ pub fn establish_connection() -> SqliteConnection {
 
             diesel::insert_into(messages)
                 .values(&new_message)
-                .execute(&connection)?;
+                .execute(&connection)
+                .expect("Error inserting message");
         
             let results = messages
                 .limit(1)
