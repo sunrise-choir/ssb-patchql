@@ -35,7 +35,6 @@ impl Default for Message {
             is_decrypted: None
         }
     }
-
 }
 
 #[cfg(test)]
@@ -44,10 +43,24 @@ mod tests {
 use crate::diesel::prelude::*;
 use crate::schema::messages::dsl::*;
 use crate::schema::keys::dsl::*;
-use crate::establish_connection;
+use crate::execute_pragmas;
 use crate::models::*;
 use diesel::result::Error;
+use dotenv::dotenv;
+use std::env;
 
+pub fn establish_connection() -> SqliteConnection {
+    dotenv().ok();
+
+    let database_url = env::var("DATABASE_URL")
+        .expect("DATABASE_URL must be set");
+    let connection = SqliteConnection::establish(&database_url)
+        .expect(&format!("Error connecting to {}", database_url));
+
+    execute_pragmas(&connection).unwrap();
+     
+    connection
+}
     #[test]
     fn insert_message() {
         let connection = establish_connection();

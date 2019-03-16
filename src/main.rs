@@ -20,11 +20,11 @@ mod graphql;
 
 use db::*;
 use graphql::root::*;
-use std::sync::Arc;
 
 fn main() {
     ::std::env::set_var("RUST_LOG", "warp_server");
     env_logger::init();
+    dotenv().ok();
 
     let log = log("warp_server");
 
@@ -36,10 +36,6 @@ fn main() {
             ))
     });
 
-    info!("Listening on 127.0.0.1:8080");
-
-    dotenv().ok();
-
     let database_url = env::var("DATABASE_URL")
         .expect("DATABASE_URL must be set"); 
     let manager = diesel::r2d2::ConnectionManager::new(database_url);
@@ -48,10 +44,16 @@ fn main() {
         .build(manager)
         .unwrap();
 
+    {
+        let connection = pool.clone().get().unwrap();
+        execute_pragmas(&connection).unwrap();
+    }
+
     let state = warp::any().map(move || Context {pool: pool.clone()});
     let graphql_filter =
         juniper_warp::make_graphql_filter(Schema::new(Query, EmptyMutation::new()), state.boxed());
 
+    info!("Listening on 127.0.0.1:8080");
     warp::serve(
         warp::get2()
             .and(warp::path("graphiql"))
