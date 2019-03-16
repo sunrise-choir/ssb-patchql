@@ -1,6 +1,6 @@
-use crate::db::*;
 use super::author::*;
 use super::like::*;
+use crate::db::*;
 
 #[derive(Default)]
 pub struct Post {

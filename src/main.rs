@@ -9,11 +9,12 @@ extern crate juniper_warp;
 #[macro_use]
 extern crate log as irrelevant_log;
 extern crate warp;
+#[macro_use]
+extern crate diesel_migrations;
 
+use dotenv::dotenv;
 use juniper::EmptyMutation;
 use warp::{http::Response, log, Filter};
-use dotenv::dotenv;
-use std::env;
 
 mod db;
 mod graphql;
@@ -22,7 +23,6 @@ use db::*;
 use graphql::root::*;
 
 fn main() {
-    ::std::env::set_var("RUST_LOG", "warp_server");
     env_logger::init();
     dotenv().ok();
 
@@ -36,20 +36,9 @@ fn main() {
             ))
     });
 
-    let database_url = env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be set"); 
-    let manager = diesel::r2d2::ConnectionManager::new(database_url);
-    let pool = diesel::r2d2::Pool::builder()
-        .max_size(15)
-        .build(manager)
-        .unwrap();
+    let pool = open_connection();
 
-    {
-        let connection = pool.clone().get().unwrap();
-        execute_pragmas(&connection).unwrap();
-    }
-
-    let state = warp::any().map(move || Context {pool: pool.clone()});
+    let state = warp::any().map(move || Context { pool: pool.clone() });
     let graphql_filter =
         juniper_warp::make_graphql_filter(Schema::new(Query, EmptyMutation::new()), state.boxed());
 

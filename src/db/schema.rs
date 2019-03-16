@@ -96,15 +96,5 @@ table! {
 }
 
 allow_tables_to_appear_in_same_query!(
-    abouts,
-    authors,
-    blob_links,
-    blobs,
-    branches,
-    contacts,
-    keys,
-    links,
-    mentions,
-    messages,
-    votes,
+    abouts, authors, blob_links, blobs, branches, contacts, keys, links, mentions, messages, votes,
 );

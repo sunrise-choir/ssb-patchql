@@ -1,5 +1,5 @@
-use super::thread::*;
 use super::input_objects::*;
+use super::thread::*;
 use crate::db::Context;
 
 #[derive(Default)]

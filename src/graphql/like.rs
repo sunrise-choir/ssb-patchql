@@ -1,9 +1,8 @@
-use crate::db::*;
 use super::author::*;
+use crate::db::*;
 
 #[derive(Default)]
-pub struct Like {
-}
+pub struct Like {}
 
 graphql_object!(Like: Context |&self| {
     field author(&executor) -> Option<Author> {
