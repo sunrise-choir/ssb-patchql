@@ -33,22 +33,21 @@ pub fn open_connection() -> Pool<ConnectionManager<SqliteConnection>> {
         .build(manager)
         .unwrap();
 
-    {
-        let connection = pool.clone().get().unwrap();
+    let connection = pool.clone().get().unwrap();
 
-        if let Err(_) = any_pending_migrations(&connection) {
-            info!("sqlite db may be empty or not exist. Running migrations");
-            embedded_migrations::run(&connection).unwrap();
-        }
-
-        if let Ok(true) = any_pending_migrations(&connection) {
-            info!("sqlite db has pending migrations. Deleting db and it will be rebuilt.");
-            std::fs::remove_file(database_url).unwrap();
-            embedded_migrations::run(&connection).unwrap();
-        }
-
-        execute_pragmas(&connection).unwrap();
+    if let Err(_) = any_pending_migrations(&connection) {
+        info!("sqlite db may be empty or not exist. Running migrations");
+        embedded_migrations::run(&connection).unwrap();
     }
+
+    if let Ok(true) = any_pending_migrations(&connection) {
+        info!("sqlite db has pending migrations. Deleting db and it will be rebuilt.");
+        std::fs::remove_file(database_url).unwrap();
+        embedded_migrations::run(&connection).unwrap();
+    }
+
+    execute_pragmas(&connection).unwrap();
+
     pool
 }
 

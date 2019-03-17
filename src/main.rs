@@ -26,7 +26,7 @@ fn main() {
     env_logger::init();
     dotenv().ok();
 
-    let log = log("warp_server");
+    let log = log("ssb-patchql-server");
 
     let homepage = warp::path::end().map(|| {
         Response::builder()
