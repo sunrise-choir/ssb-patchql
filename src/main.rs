@@ -11,6 +11,10 @@ extern crate log as irrelevant_log;
 extern crate warp;
 #[macro_use]
 extern crate diesel_migrations;
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_json;
 
 mod db;
 mod graphql;
