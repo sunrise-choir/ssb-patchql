@@ -3,7 +3,9 @@ use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::result::Error;
 use diesel::sqlite::SqliteConnection;
 use diesel_migrations::any_pending_migrations;
+use flumedb::offset_log::OffsetLog;
 use std::env;
+use std::sync::{Arc, Mutex};
 
 pub mod models;
 pub mod schema;
@@ -12,6 +14,7 @@ embed_migrations!();
 
 pub struct Context {
     pub pool: Pool<ConnectionManager<SqliteConnection>>,
+    pub log: Arc<Mutex<OffsetLog<u32>>>,
 }
 
 // To make our context usable by Juniper, we have to implement a marker trait.
