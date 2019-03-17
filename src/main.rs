@@ -29,7 +29,8 @@ fn main() {
     env_logger::init();
     dotenv().ok();
 
-    let offset_log_path = env::var("OFFSET_LOG_PATH").expect("OFFSET_LOG_PATH must be set");
+    let offset_log_path =
+        env::var("OFFSET_LOG_PATH").expect("OFFSET_LOG_PATH environment variable must be set");
 
     let log = log("ssb-patchql-server");
 

@@ -1,3 +1,4 @@
+use diesel::dsl::max;
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::result::Error;
@@ -9,6 +10,8 @@ use std::sync::{Arc, Mutex};
 
 pub mod models;
 pub mod schema;
+
+use schema::messages::dsl::*;
 
 embed_migrations!();
 
@@ -52,6 +55,13 @@ pub fn open_connection() -> Pool<ConnectionManager<SqliteConnection>> {
     execute_pragmas(&connection).unwrap();
 
     pool
+}
+
+pub fn get_latest(connection: &SqliteConnection) -> Result<Option<f64>, Error> {
+    messages
+        .select(max(flume_seq))
+        .first(connection)
+        .map(|res: Option<i64>| res.map(|val| val as f64))
 }
 
 #[cfg(test)]
