@@ -1,4 +1,5 @@
 pub mod author;
+pub mod db;
 pub mod feed;
 pub mod input_objects;
 pub mod like;

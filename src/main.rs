@@ -13,13 +13,13 @@ extern crate warp;
 extern crate diesel_migrations;
 
 use dotenv::dotenv;
-use juniper::EmptyMutation;
 use warp::{http::Response, log, Filter};
 
 mod db;
 mod graphql;
 
 use db::*;
+use graphql::db::DbMutation;
 use graphql::root::*;
 
 fn main() {
@@ -40,7 +40,7 @@ fn main() {
 
     let state = warp::any().map(move || Context { pool: pool.clone() });
     let graphql_filter =
-        juniper_warp::make_graphql_filter(Schema::new(Query, EmptyMutation::new()), state.boxed());
+        juniper_warp::make_graphql_filter(Schema::new(Query, DbMutation::default()), state.boxed());
 
     info!("Listening on 127.0.0.1:8080");
     warp::serve(
