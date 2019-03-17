@@ -46,12 +46,13 @@ fn main() {
             ))
     });
 
-    let pool = open_connection();
+    let connection = open_connection();
+    let locked_connection_ref = Arc::new(Mutex::new(connection));
     let offset_log = OffsetLog::new(offset_log_path).unwrap();
     let locked_log_ref = Arc::new(Mutex::new(offset_log));
 
     let state = warp::any().map(move || Context {
-        pool: pool.clone(),
+        connection: locked_connection_ref.clone(),
         log: locked_log_ref.clone(),
     });
     let graphql_filter =

@@ -16,7 +16,7 @@ use schema::messages::dsl::*;
 embed_migrations!();
 
 pub struct Context {
-    pub pool: Pool<ConnectionManager<SqliteConnection>>,
+    pub connection: Arc<Mutex<SqliteConnection>>,
     pub log: Arc<Mutex<OffsetLog<u32>>>,
 }
 
@@ -30,16 +30,11 @@ pub fn execute_pragmas(connection: &SqliteConnection) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn open_connection() -> Pool<ConnectionManager<SqliteConnection>> {
+pub fn open_connection() -> SqliteConnection {
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
-    let manager = diesel::r2d2::ConnectionManager::new(database_url.clone());
-    let pool = diesel::r2d2::Pool::builder()
-        .max_size(15)
-        .build(manager)
-        .unwrap();
-
-    let connection = pool.clone().get().unwrap();
+    let connection = SqliteConnection::establish(&database_url)
+        .expect(&format!("Error connecting to {}", database_url));
 
     if let Err(_) = any_pending_migrations(&connection) {
         info!("sqlite db may be empty or not exist. Running migrations");
@@ -54,7 +49,7 @@ pub fn open_connection() -> Pool<ConnectionManager<SqliteConnection>> {
 
     execute_pragmas(&connection).unwrap();
 
-    pool
+    connection
 }
 
 pub fn get_latest(connection: &SqliteConnection) -> Result<Option<f64>, Error> {
