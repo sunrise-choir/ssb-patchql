@@ -1,7 +1,14 @@
 use super::keys::*;
 use crate::db::{Error, SqliteConnection};
 use crate::lib::SsbMessage;
-use crate::db::schema::messages;
+use serde_json::Value;
+
+use diesel::prelude::*;
+use diesel::insert_into;
+use crate::db::schema::{messages};
+use crate::db::schema::messages::dsl::{messages as messages_table};
+use super::keys::find_or_create_key;
+use super::authors::find_or_create_author;
 
 #[derive(Queryable, Insertable, Associations, Identifiable, Debug, Default)]
 #[table_name = "messages"]
@@ -28,43 +35,41 @@ pub fn insert_message(
     message_key_id: i32,
     is_decrypted: bool,
 ) -> Result<usize, Error> {
-    unimplemented!();
-    //    trace!("prepare stmt");
-    //    let mut insert_msg_stmt = connection.prepare_cached("INSERT INTO messages_raw (flume_seq, key_id, seq, received_time, asserted_time, root_key_id, fork_key_id, author_id, content_type, content, is_decrypted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")?;
-    //
-    //    trace!("get root key id");
-    //    let root_key_id = match message.value.content["root"] {
-    //        Value::String(ref key) => {
-    //            let id = find_or_create_key(&connection, &key).unwrap();
-    //            Some(id)
-    //        }
-    //        _ => None,
-    //    };
-    //
-    //    trace!("get fork key id");
-    //    let fork_key_id = match message.value.content["fork"] {
-    //        Value::String(ref key) => {
-    //            let id = find_or_create_key(&connection, &key).unwrap();
-    //            Some(id)
-    //        }
-    //        _ => None,
-    //    };
-    //
-    //    trace!("find or create author");
-    //    let author_id = find_or_create_author(&connection, &message.value.author)?;
-    //
-    //    trace!("insert message");
-    //    insert_msg_stmt.execute(&[
-    //        &seq as &ToSql,
-    //        &message_key_id,
-    //        &message.value.sequence,
-    //        &message.timestamp,
-    //        &message.value.timestamp,
-    //        &root_key_id as &ToSql,
-    //        &fork_key_id as &ToSql,
-    //        &author_id,
-    //        &message.value.content["type"].as_str() as &ToSql,
-    //        &message.value.content as &ToSql,
-    //        &is_decrypted as &ToSql,
-    //    ])
+
+    let root_key_id = match message.value.content["root"] {
+        Value::String(ref key) => {
+            let id = find_or_create_key(&connection, &key).unwrap();
+            Some(id)
+        }
+        _ => None,
+    };
+
+    let fork_key_id = match message.value.content["fork"] {
+        Value::String(ref key) => {
+            let id = find_or_create_key(&connection, &key).unwrap();
+            Some(id)
+        }
+        _ => None,
+    };
+
+    let author_id = find_or_create_author(&connection, &message.value.author)?;
+
+    let message = Message{
+        flume_seq: Some(seq),
+        key_id: Some(message_key_id),
+        seq: Some(message.value.sequence as i32),
+        received_time: Some(message.timestamp),
+        asserted_time: Some(message.value.timestamp),
+        root_key_id,
+        fork_key_id,
+        author_id: Some(author_id),
+        content_type: message.value.content["type"].as_str().map(|content_type| content_type.to_string()),
+        content: Some(message.value.content.to_string()),
+        is_decrypted: Some(is_decrypted) 
+    };
+
+    insert_into(messages_table)
+        .values(message)
+        .execute(connection)
+
 }
