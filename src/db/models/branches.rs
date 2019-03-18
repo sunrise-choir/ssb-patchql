@@ -1,7 +1,6 @@
 use serde_json::Value;
 
 pub fn insert_branches(connection: &SqliteConnection, message: &SsbMessage, message_key_id: i64) {
-    unimplemented!();
 //    if let Some(branches_value) = message.value.content.get("branch") {
 //        let mut insert_branch_stmt = connection
 //            .prepare_cached(
