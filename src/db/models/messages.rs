@@ -1,5 +1,5 @@
-use crate::schema::*;
 use super::keys::*;
+use crate::schema::*;
 
 #[derive(Queryable, Insertable, Associations, Identifiable, Debug, Default)]
 #[table_name = "messages"]

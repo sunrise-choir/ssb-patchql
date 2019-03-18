@@ -1,6 +1,6 @@
 pub mod abouts;
-pub mod messages;
 pub mod keys;
+pub mod messages;
 
 #[cfg(test)]
 mod tests {
