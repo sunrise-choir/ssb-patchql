@@ -1,6 +1,5 @@
 use diesel::dsl::max;
 use diesel::prelude::*;
-use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::result::Error;
 use diesel::sqlite::SqliteConnection;
 use diesel_migrations::any_pending_migrations;

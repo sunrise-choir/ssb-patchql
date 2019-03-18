@@ -5,7 +5,6 @@ use itertools::Itertools;
 use serde_json::Value;
 use std::collections::BTreeSet;
 
-use crate::db::models::*;
 use crate::db::schema::authors::dsl::{author as author_row, authors as authors_table};
 use crate::db::schema::keys::dsl::{id as keys_id_row, key as keys_key_row, keys as keys_table};
 use crate::db::schema::links::dsl::{link_from_key_id, link_to_key_id, links as links_table};
@@ -107,7 +106,7 @@ graphql_object!(DbMutation: Context |&self| {
         log_iter
             .skip(num_to_skip)
             .take(chunk_size as usize)
-            .chunks(1000)
+            .chunks(5000)
             .into_iter()
             .for_each(|chunk|{
                 //We use iter tools to set an upper bound on the size of chunks we process here. 
