@@ -1,47 +1,6 @@
-use crate::schema::*;
-
-#[derive(Queryable, Insertable, Associations, Identifiable, Debug)]
-#[table_name = "messages"]
-#[primary_key(flume_seq)]
-#[belongs_to(Key)]
-pub struct Message {
-    pub flume_seq: Option<i64>,
-    pub key_id: Option<i32>,
-    pub seq: Option<i32>,
-    pub received_time: Option<f64>,
-    pub asserted_time: Option<f64>,
-    pub root_key_id: Option<i32>,
-    pub fork_key_id: Option<i32>,
-    pub author_id: Option<i32>,
-    pub content_type: Option<String>,
-    pub content: Option<String>,
-    pub is_decrypted: Option<bool>,
-}
-
-#[derive(Queryable, Insertable, Identifiable, Debug)]
-#[table_name = "keys"]
-pub struct Key {
-    pub id: Option<i32>,
-    pub key: String,
-}
-
-impl Default for Message {
-    fn default() -> Message {
-        Message {
-            flume_seq: Some(0),
-            key_id: None,
-            seq: None,
-            received_time: None,
-            asserted_time: None,
-            root_key_id: None,
-            fork_key_id: None,
-            author_id: None,
-            content_type: None,
-            content: None,
-            is_decrypted: None,
-        }
-    }
-}
+pub mod abouts;
+pub mod messages;
+pub mod keys;
 
 #[cfg(test)]
 mod tests {

@@ -8,8 +8,9 @@ use super::input_objects::*;
 use super::like::*;
 use super::post::*;
 use super::thread::*;
-use crate::db::models::*;
-use crate::db::schema::keys::dsl::{id as keys_id_row, key as keys_key_row, keys as keys_table};
+use crate::db::models::messages::*;
+use crate::db::models::keys::*;
+use crate::db::schema::keys::dsl::{key as keys_key_row, keys as keys_table};
 use crate::db::Context;
 use serde_json::Value;
 
