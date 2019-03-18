@@ -1,10 +1,101 @@
 pub mod abouts;
+pub mod authors;
+pub mod contacts;
 pub mod keys;
+pub mod links;
+pub mod mentions;
 pub mod messages;
+pub mod votes;
+
+use crate::db::{Error, SqliteConnection};
+use crate::lib::*;
+use base64::decode;
+use flumedb::flume_view::Sequence as FlumeSequence;
+use private_box::SecretKey;
+use serde_json::Value;
+
+use abouts::insert_abouts;
+use authors::find_or_create_author;
+use contacts::insert_or_update_contacts;
+use keys::find_or_create_key;
+use links::insert_links;
+use mentions::insert_mentions;
+use messages::insert_message;
+use votes::insert_or_update_votes;
+
+fn append_item(
+    connection: &SqliteConnection,
+    secret_keys: &[SecretKey],
+    seq: FlumeSequence,
+    item: &[u8],
+) -> Result<(), Error> {
+    let message: SsbMessage = serde_json::from_slice(item).unwrap();
+
+    let (is_decrypted, message) = attempt_decryption(message, secret_keys);
+
+    let message_key_id = find_or_create_key(&connection, &message.key).unwrap();
+
+    // votes are a kind of backlink, but we want to put them in their own table.
+    match &message.value.content["type"] {
+        Value::String(type_string) if type_string == "vote" => {
+            insert_or_update_votes(connection, &message);
+        }
+        _ => {
+            let mut links = Vec::new();
+            find_values_in_object_by_key(&message.value.content, "link", &mut links);
+            insert_links(connection, links.as_slice(), message_key_id);
+            insert_mentions(connection, links.as_slice(), message_key_id);
+            //insert_blob_links(connection, links.as_slice(), message_key_id);
+        }
+    }
+
+    //insert_branches(connection, &message, message_key_id);
+    insert_message(
+        connection,
+        &message,
+        seq as i64,
+        message_key_id,
+        is_decrypted,
+    )?;
+    insert_or_update_contacts(connection, &message, message_key_id, is_decrypted);
+    insert_abouts(connection, &message, message_key_id);
+
+    Ok(())
+}
+
+fn attempt_decryption(mut message: SsbMessage, secret_keys: &[SecretKey]) -> (bool, SsbMessage) {
+    let mut is_decrypted = false;
+
+    message = match message.value.content["type"] {
+        Value::Null => {
+            let content = message.value.content.clone();
+            let strrr = &content.as_str().unwrap().trim_end_matches(".box");
+
+            let bytes = decode(strrr).unwrap();
+
+            for secret_key in secret_keys {
+                message.value.content = private_box::decrypt(&bytes, secret_key)
+                    .and_then(|data| {
+                        is_decrypted = true;
+                        serde_json::from_slice(&data).map_err(|_| ())
+                    })
+                    .unwrap_or(Value::Null); //If we can't decrypt it, throw it away.
+
+                if is_decrypted {
+                    break;
+                }
+            }
+
+            message
+        }
+        _ => message,
+    };
+
+    (is_decrypted, message)
+}
 
 #[cfg(test)]
 mod tests {
-
     use crate::diesel::prelude::*;
     use crate::execute_pragmas;
     use crate::models::*;

@@ -15,6 +15,7 @@ use crate::db::schema::messages::dsl::{
 use diesel::dsl::sql;
 use diesel::prelude::*;
 use diesel::result::Error;
+use crate::lib::{SsbMessage, find_values_in_object_by_key};
 
 #[derive(Default)]
 pub struct DbMutation {}
@@ -34,49 +35,6 @@ impl<T> Iterator for LogIter<T> {
     fn next(&mut self) -> Option<Self::Item> {
         self.log_iter.next()
     }
-}
-
-fn find_values_in_object_by_key<'a>(
-    obj: &'a serde_json::Value,
-    key: &str,
-    values: &mut Vec<&'a serde_json::Value>,
-) {
-    if let Some(val) = obj.get(key) {
-        values.push(val)
-    }
-
-    match obj {
-        Value::Array(arr) => {
-            for val in arr {
-                find_values_in_object_by_key(val, key, values);
-            }
-        }
-        Value::Object(kv) => {
-            for val in kv.values() {
-                match val {
-                    Value::Object(_) => find_values_in_object_by_key(val, key, values),
-                    Value::Array(_) => find_values_in_object_by_key(val, key, values),
-                    _ => (),
-                }
-            }
-        }
-        _ => (),
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct SsbValue {
-    author: String,
-    sequence: u32,
-    timestamp: f64,
-    content: Value,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct SsbMessage {
-    key: String,
-    value: SsbValue,
-    timestamp: f64,
 }
 
 graphql_object!(DbMutation: Context |&self| {

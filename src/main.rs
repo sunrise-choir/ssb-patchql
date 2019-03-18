@@ -18,6 +18,7 @@ extern crate serde_json;
 
 mod db;
 mod graphql;
+mod lib;
 
 use dotenv::dotenv;
 use flumedb::offset_log::OffsetLog;

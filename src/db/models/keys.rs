@@ -1,9 +1,8 @@
-use crate::schema::*;
 use crate::db::*;
+use crate::db::schema::*;
 
-use diesel::prelude::*;
+use crate::db::schema::keys::dsl::{id as keys_id_row, key as keys_key_row, keys as keys_table};
 use diesel::insert_into;
-use crate::db::schema::keys::dsl::{key as keys_key_row, keys as keys_table, id as keys_id_row};
 
 #[derive(Queryable, Insertable, Identifiable, Debug)]
 #[table_name = "keys"]
@@ -18,14 +17,15 @@ pub fn find_or_create_key(connection: &SqliteConnection, key: &str) -> Result<i3
         .filter(keys_key_row.eq(key))
         .first::<Option<i32>>(connection)
         .map(|res| res.unwrap())
-        .or_else(|_|{
+        .or_else(|_| {
             insert_into(keys_table)
                 .values(keys_key_row.eq(key))
                 .execute(connection)?;
 
             keys_table
+                .select(keys_id_row)
                 .order(keys_id_row.desc())
-                .first::<Key>(connection)
-                .map(|key| key.id.unwrap())
-        }) 
+                .first::<Option<i32>>(connection)
+                .map(|key| key.unwrap())
+        })
 }
