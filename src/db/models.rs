@@ -1,7 +1,9 @@
 use crate::schema::*;
 
-#[derive(Queryable, Insertable, Debug)]
+#[derive(Queryable, Insertable, Associations, Identifiable, Debug)]
 #[table_name = "messages"]
+#[primary_key(flume_seq)]
+#[belongs_to(Key)]
 pub struct Message {
     pub flume_seq: Option<i64>,
     pub key_id: Option<i32>,
@@ -16,7 +18,7 @@ pub struct Message {
     pub is_decrypted: Option<bool>,
 }
 
-#[derive(Queryable, Insertable, Debug)]
+#[derive(Queryable, Insertable, Identifiable, Debug)]
 #[table_name = "keys"]
 pub struct Key {
     pub id: Option<i32>,

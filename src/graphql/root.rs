@@ -1,3 +1,4 @@
+use diesel::prelude::*;
 use juniper::{FieldResult, RootNode};
 
 use super::author::*;
@@ -7,7 +8,10 @@ use super::input_objects::*;
 use super::like::*;
 use super::post::*;
 use super::thread::*;
+use crate::db::models::*;
+use crate::db::schema::keys::dsl::{id as keys_id_row, key as keys_key_row, keys as keys_table};
 use crate::db::Context;
+use serde_json::Value;
 
 pub struct Query;
 
@@ -18,7 +22,26 @@ pub type Schema = RootNode<'static, Query, DbMutation>;
 graphql_object!(Query: Context |&self| {
 
     field thread(&executor, id: String, order_by = (OrderBy::Received): OrderBy) -> FieldResult<Thread> {
-        let thread = Thread::default();
+        let mut thread = Thread::default();
+
+        let connection = executor.context().connection.lock().unwrap(); 
+
+        let key = keys_table
+            .filter(keys_key_row.eq(id.clone()))
+            .first::<Key>(&(*connection))?;
+
+        let message: Message = Message::belonging_to(&key)
+            .first(&(*connection))?;
+
+        if let Some(content) = &message.content {
+            let parsed_content: Value = serde_json::from_str(content)?; 
+
+            if let Value::String(text) = &parsed_content["text"] {
+                thread.text = text.clone();
+                thread.id = id; 
+            }
+        }
+        
 
         Ok(thread)
     }

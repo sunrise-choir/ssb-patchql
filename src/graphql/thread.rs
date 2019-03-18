@@ -28,4 +28,5 @@ graphql_object!(Thread: Context |&self| {
     }
     field is_private() -> bool {self.is_private}
     field id() -> &str { self.id.as_str() }
+    field text() -> &str {self.text.as_str() }
 });

@@ -10,8 +10,8 @@ use crate::db::schema::authors::dsl::{author as author_row, authors as authors_t
 use crate::db::schema::keys::dsl::{id as keys_id_row, key as keys_key_row, keys as keys_table};
 use crate::db::schema::links::dsl::{link_from_key_id, link_to_key_id, links as links_table};
 use crate::db::schema::messages::dsl::{
-    asserted_time, author_id, content, content_type, flume_seq as flume_seq_row, is_decrypted,
-    key_id, messages as messages_table, received_time, seq as seq_row,
+    asserted_time, author_id, content, content_type, flume_seq as flume_seq_row, fork_key_id,
+    is_decrypted, key_id, messages as messages_table, received_time, root_key_id, seq as seq_row,
 };
 use diesel::dsl::sql;
 use diesel::prelude::*;
@@ -127,6 +127,12 @@ graphql_object!(DbMutation: Context |&self| {
                 messages.iter()
                     .for_each(|(message, _)|{
                         keys_set.insert(message.key.clone());
+                        if let Value::String(root_key) = &message.value.content["root"]{
+                            keys_set.insert(root_key.to_string());
+                        }
+                        if let Value::String(fork_key) = &message.value.content["fork"]{
+                            keys_set.insert(fork_key.to_string());
+                        }
                         authors_set.insert(message.value.author.clone());
                         find_values_in_object_by_key(&message.value.content, "link", &mut links);
                     });
@@ -160,14 +166,36 @@ graphql_object!(DbMutation: Context |&self| {
                     let messages_rows: Vec<_> = messages.iter()
                         .map(|(message, offset)|{
                             let key_id_query_string = format!("(SELECT id FROM keys WHERE key == '{}')", message.key); 
+
+                            let root_key_id_query = match &message.value.content["root"] {
+                                Value::String(root_key) => {
+                                    let query_string = format!("(SELECT id FROM keys WHERE key == '{}')", root_key); 
+                                    root_key_id.eq(sql(&query_string))
+                                },
+                                _ => root_key_id.eq(sql("NULL"))
+                            };
+                            let fork_key_id_query = match &message.value.content["fork"] {
+                                Value::String(fork_key) => {
+                                    let query_string = format!("(SELECT id FROM keys WHERE key == '{}')", fork_key); 
+                                    fork_key_id.eq(sql(&query_string))
+                                },
+                                _ => fork_key_id.eq(sql("NULL"))
+                            };
+
                             let author_id_query_string = format!("(SELECT id FROM authors WHERE author == '{}')", message.value.author); 
 
                             (
                                 flume_seq_row.eq(*offset as i64),
                                 key_id.eq(sql(&key_id_query_string)),
+                                seq_row.eq(message.value.sequence as i32),
+                                received_time.eq(message.timestamp),
+                                asserted_time.eq(message.value.timestamp),
+                                root_key_id_query,
+                                fork_key_id_query,
                                 author_id.eq(sql(&author_id_query_string)),
-                                content.eq(message.value.content.as_str()),
                                 content_type.eq(message.value.content["type"].as_str()), 
+                                content.eq(message.value.content.to_string()),
+                                //TODO is_decrypted
                             )
                         })
                     .collect();
@@ -176,7 +204,7 @@ graphql_object!(DbMutation: Context |&self| {
                         .values(&authors_rows)
                         .execute(&(*connection))?;
 
-                    let inserted_keys = diesel::insert_or_ignore_into(keys_table)
+                    diesel::insert_or_ignore_into(keys_table)
                         .values(&keys_rows)
                         .execute(&(*connection))?;
 
@@ -187,6 +215,12 @@ graphql_object!(DbMutation: Context |&self| {
                             println!("Nope nope nope: {}", err);
                             err
                         })?;
+
+                    //TODO: links table
+                    //TODO: votes table
+                    //TODO: contacts table
+                    //TODO: mentions table
+                    //TODO: branches table
 
                     Ok(())
                 }).unwrap();
