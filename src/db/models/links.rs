@@ -1,5 +1,5 @@
+use crate::db::SqliteConnection;
 use crate::db::*;
-use crate::db::{SqliteConnection};
 
 use super::keys::find_or_create_key;
 use crate::db::schema::links::dsl::{link_from_key_id, link_to_key_id, links as links_table};
