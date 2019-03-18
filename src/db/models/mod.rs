@@ -16,7 +16,6 @@ use private_box::SecretKey;
 use serde_json::Value;
 
 use abouts::insert_abouts;
-use authors::find_or_create_author;
 use branches::insert_branches;
 use contacts::insert_or_update_contacts;
 use keys::find_or_create_key;

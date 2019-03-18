@@ -2,11 +2,10 @@ use diesel::prelude::*;
 use diesel::replace_into;
 
 use super::authors::find_or_create_author;
-use super::keys::find_or_create_key;
 use crate::db::schema::contacts::dsl::{
     author_id, contact_author_id, contacts, is_decrypted as is_decrypted_column, state,
 };
-use crate::db::{Error, SqliteConnection};
+use crate::db::{SqliteConnection};
 use crate::lib::*;
 
 use serde_json::Value;

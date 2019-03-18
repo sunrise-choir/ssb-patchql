@@ -1,7 +1,7 @@
 use super::authors::find_or_create_author;
 use super::keys::find_or_create_key;
 use crate::db::schema::abouts::dsl::{abouts, link_from_key_id, link_to_author_id, link_to_key_id};
-use crate::db::{Error, SqliteConnection};
+use crate::db::{SqliteConnection};
 use crate::lib::*;
 use diesel::insert_into;
 use diesel::prelude::*;

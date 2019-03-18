@@ -2,12 +2,8 @@ use crate::db::*;
 use flumedb::offset_log::{LogEntry, OffsetLogIter};
 use flumedb::BidirIterator;
 use itertools::Itertools;
-use serde_json::Value;
-use std::collections::BTreeSet;
 
 use crate::db::models::append_item;
-use crate::lib::{find_values_in_object_by_key, SsbMessage};
-use diesel::dsl::sql;
 use diesel::prelude::*;
 use diesel::result::Error;
 
