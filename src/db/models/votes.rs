@@ -1,14 +1,13 @@
-use crate::db::{SqliteConnection};
+use super::authors::find_or_create_author;
+use super::keys::find_or_create_key;
+use crate::db::schema::votes::dsl::{link_from_author_id, link_to_key_id, value, votes};
+use crate::db::SqliteConnection;
 use crate::lib::*;
 use diesel::prelude::*;
 use diesel::replace_into;
-use crate::db::schema::votes::dsl::{votes, link_from_author_id, link_to_key_id, value};
 use serde_json::Value;
-use super::keys::find_or_create_key;
-use super::authors::find_or_create_author;
 
 pub fn insert_or_update_votes(connection: &SqliteConnection, message: &SsbMessage) {
-
     if let Value::Number(vote_value) = &message.value.content["vote"]["value"] {
         if let Value::String(link) = &message.value.content["vote"]["link"] {
             let author_id = find_or_create_author(&connection, &message.value.author).unwrap();
@@ -18,10 +17,10 @@ pub fn insert_or_update_votes(connection: &SqliteConnection, message: &SsbMessag
 
             replace_into(votes)
                 .values((
-                        link_from_author_id.eq(author_id),
-                        link_to_key_id.eq(link_to_key),
-                        value.eq(vote_num)
-                        ))
+                    link_from_author_id.eq(author_id),
+                    link_to_key_id.eq(link_to_key),
+                    value.eq(vote_num),
+                ))
                 .execute(connection)
                 .unwrap();
         }

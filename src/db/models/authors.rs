@@ -1,5 +1,5 @@
-use crate::db::*;
 use crate::db::schema::*;
+use crate::db::*;
 
 use crate::db::schema::authors::dsl::{
     author as authors_author_row, authors as authors_table, id as authors_id_row,

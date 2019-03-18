@@ -3,7 +3,9 @@ use diesel::replace_into;
 
 use super::authors::find_or_create_author;
 use super::keys::find_or_create_key;
-use crate::db::schema::contacts::dsl::{contacts, author_id, contact_author_id, is_decrypted as is_decrypted_column, state};
+use crate::db::schema::contacts::dsl::{
+    author_id, contact_author_id, contacts, is_decrypted as is_decrypted_column, state,
+};
 use crate::db::{Error, SqliteConnection};
 use crate::lib::*;
 
@@ -15,7 +17,6 @@ pub fn insert_or_update_contacts(
     is_decrypted: bool,
 ) {
     if let Value::String(contact) = &message.value.content["contact"] {
-
         let is_blocking = message.value.content["blocking"].as_bool().unwrap_or(false);
         let is_following = message.value.content["following"]
             .as_bool()
@@ -33,11 +34,11 @@ pub fn insert_or_update_contacts(
 
         replace_into(contacts)
             .values((
-                   author_id.eq(author),
-                   contact_author_id.eq(contact_author),
-                   is_decrypted_column.eq(is_decrypted),
-                   state.eq(follow_state)
-                    ))
+                author_id.eq(author),
+                contact_author_id.eq(contact_author),
+                is_decrypted_column.eq(is_decrypted),
+                state.eq(follow_state),
+            ))
             .execute(connection)
             .unwrap();
     }

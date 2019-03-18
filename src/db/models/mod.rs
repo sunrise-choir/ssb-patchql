@@ -1,5 +1,6 @@
 pub mod abouts;
 pub mod authors;
+pub mod branches;
 pub mod contacts;
 pub mod keys;
 pub mod links;
@@ -16,6 +17,7 @@ use serde_json::Value;
 
 use abouts::insert_abouts;
 use authors::find_or_create_author;
+use branches::insert_branches;
 use contacts::insert_or_update_contacts;
 use keys::find_or_create_key;
 use links::insert_links;
@@ -23,7 +25,7 @@ use mentions::insert_mentions;
 use messages::insert_message;
 use votes::insert_or_update_votes;
 
-fn append_item(
+pub fn append_item(
     connection: &SqliteConnection,
     secret_keys: &[SecretKey],
     seq: FlumeSequence,
@@ -49,7 +51,7 @@ fn append_item(
         }
     }
 
-    //insert_branches(connection, &message, message_key_id);
+    insert_branches(connection, &message, message_key_id);
     insert_message(
         connection,
         &message,

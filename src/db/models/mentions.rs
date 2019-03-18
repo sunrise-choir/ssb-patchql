@@ -1,9 +1,9 @@
-use diesel::prelude::*;
 use diesel::insert_into;
+use diesel::prelude::*;
 
 use super::keys::find_or_create_key;
-use crate::db::{SqliteConnection};
-use crate::db::schema::mentions::dsl::{mentions, link_from_key_id, link_to_author_id};
+use crate::db::schema::mentions::dsl::{link_from_key_id, link_to_author_id, mentions};
+use crate::db::SqliteConnection;
 
 pub fn insert_mentions(
     connection: &SqliteConnection,

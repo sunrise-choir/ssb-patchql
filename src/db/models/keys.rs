@@ -1,5 +1,5 @@
-use crate::db::*;
 use crate::db::schema::*;
+use crate::db::*;
 
 use crate::db::schema::keys::dsl::{id as keys_id_row, key as keys_key_row, keys as keys_table};
 use diesel::insert_into;
