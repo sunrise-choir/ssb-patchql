@@ -2,6 +2,7 @@ use super::author::*;
 use super::input_objects::*;
 use super::like::*;
 use super::post::*;
+use super::like_connection::*;
 use crate::db::models::keys::*;
 use crate::db::models::votes::*;
 use crate::db::schema::keys::dsl::{key as key_column, keys as keys_table};
@@ -13,11 +14,6 @@ pub struct Thread {
     pub id: String,
     pub text: String,
     pub is_private: bool,
-}
-
-#[derive(GraphQLObject)]
-pub struct LikeConnection {
-    count: i32,
 }
 
 graphql_object!(Thread: Context |&self| {

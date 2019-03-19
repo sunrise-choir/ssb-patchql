@@ -3,6 +3,7 @@ pub mod db;
 pub mod feed;
 pub mod input_objects;
 pub mod like;
+pub mod like_connection;
 pub mod mention;
 pub mod post;
 pub mod root;
