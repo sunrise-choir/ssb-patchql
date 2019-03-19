@@ -25,7 +25,7 @@ graphql_object!(Query: Context |&self| {
     field thread(&executor, id: String, order_by = (OrderBy::Received): OrderBy) -> FieldResult<Thread> {
         let mut thread = Thread::default();
 
-        let connection = executor.context().connection.lock().unwrap(); 
+        let connection = executor.context().connection.lock().unwrap();
 
         let key = keys_table
             .filter(keys_key_row.eq(id.clone()))
@@ -35,11 +35,11 @@ graphql_object!(Query: Context |&self| {
             .first(&(*connection))?;
 
         if let Some(content) = &message.content {
-            let parsed_content: Value = serde_json::from_str(content)?; 
+            let parsed_content: Value = serde_json::from_str(content)?;
 
             if let Value::String(text) = &parsed_content["text"] {
                 thread.text = text.clone();
-                thread.id = id; 
+                thread.id = id;
             }
         }
 

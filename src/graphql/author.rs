@@ -11,19 +11,19 @@ pub struct Author {
 
 graphql_object!(Author: Context |&self| {
     field name(&executor) -> Option<String> {
-        let connection = executor.context().connection.lock().unwrap(); 
+        let connection = executor.context().connection.lock().unwrap();
         Some(String::new())
     }
     field description(&executor) -> Option<String> {
-        let connection = executor.context().connection.lock().unwrap(); 
+        let connection = executor.context().connection.lock().unwrap();
         Some(String::new())
     }
     field image_link(&executor) -> Option<String> {
-        let connection = executor.context().connection.lock().unwrap(); 
+        let connection = executor.context().connection.lock().unwrap();
         Some(String::new())
     }
-    field id(&executor) -> String { 
-        let connection = executor.context().connection.lock().unwrap(); 
+    field id(&executor) -> String {
+        let connection = executor.context().connection.lock().unwrap();
         authors_table
             .select(author_col)
             .filter(author_id_col.eq(self.author_id))

@@ -9,7 +9,7 @@ pub struct Like {
 
 graphql_object!(Like: Context |&self| {
     field author(&executor) -> Option<Author> {
-        let connection = executor.context().connection.lock().unwrap(); 
+        let connection = executor.context().connection.lock().unwrap();
 
         let author = Author{author_id: self.author_id};
         Some(author)

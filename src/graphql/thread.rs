@@ -26,7 +26,7 @@ graphql_object!(Thread: Context |&self| {
         vec![Post::default(), Post::default()]
     }
     field likes(&executor) -> Vec<Like> {
-        let connection = executor.context().connection.lock().unwrap(); 
+        let connection = executor.context().connection.lock().unwrap();
 
         let key: Key = keys_table
             .filter(key_column.eq(self.id.clone()))

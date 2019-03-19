@@ -32,7 +32,7 @@ impl<T> Iterator for LogIter<T> {
 graphql_object!(DbMutation: Context |&self| {
     field process(&executor, chunk_size = 100: i32) -> ProcessResults {
         //TODO: get the secret key from env
-        let secret_key_bytes = &vec![0]; 
+        let secret_key_bytes = &vec![0];
         let secret_key = SecretKey::from_slice(secret_key_bytes).unwrap_or_else(|| {
             let empty_slice = vec![
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -47,7 +47,7 @@ graphql_object!(DbMutation: Context |&self| {
         let connection = context.connection.lock().unwrap();
 
         //We're using Max of flume_seq.
-        //When the db is empty, we'll get None. 
+        //When the db is empty, we'll get None.
         //When there is one item in the db, we'll get 0 (it's the first seq number you get)
         //When there's more than one you'll get some >0 number
         let max_seq = get_latest(&connection)
@@ -70,7 +70,7 @@ graphql_object!(DbMutation: Context |&self| {
             .chunks(10000)
             .into_iter()
             .for_each(|chunk|{
-                //We use iter tools to set an upper bound on the size of chunks we process here. 
+                //We use iter tools to set an upper bound on the size of chunks we process here.
                 //It avoids collecting into a vec and consuming way too much memory if the caller
                 //tries to process the entire log.
                 connection.transaction::<_, Error, _>(||{
