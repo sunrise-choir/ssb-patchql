@@ -2,7 +2,11 @@ use super::author::*;
 use super::input_objects::*;
 use super::like::*;
 use super::post::*;
+use crate::db::models::keys::*;
+use crate::db::models::votes::*;
+use crate::db::schema::keys::dsl::{id as id_column, key as key_column, keys as keys_table};
 use crate::db::Context;
+use diesel::prelude::*;
 
 #[derive(Default)]
 pub struct Thread {
@@ -22,9 +26,24 @@ graphql_object!(Thread: Context |&self| {
         vec![Post::default(), Post::default()]
     }
     field likes(&executor) -> Vec<Like> {
-        let database = executor.context();
+        let connection = executor.context().connection.lock().unwrap(); 
 
-        vec![Like::default(), Like::default()]
+        let key: Key = keys_table
+            .filter(key_column.eq(self.id.clone()))
+            .first::<Key>(&(*connection)).unwrap();
+
+        let votes: Vec<Vote> = Vote::belonging_to(&key)
+            .load(&(*connection)).unwrap();
+
+        votes
+            .iter()
+            .map(|vote|{
+                Like{
+                    author_id: vote.link_from_author_id.unwrap(),
+                    value: vote.value.unwrap()
+                }
+            })
+            .collect()
     }
     field is_private() -> bool {self.is_private}
     field id() -> &str { self.id.as_str() }

@@ -42,7 +42,6 @@ graphql_object!(Query: Context |&self| {
                 thread.id = id; 
             }
         }
-        
 
         Ok(thread)
     }

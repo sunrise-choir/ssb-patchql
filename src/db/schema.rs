@@ -88,9 +88,10 @@ table! {
 }
 
 table! {
-    votes (link_from_author_id, link_to_key_id) {
-        link_from_author_id -> Integer,
-        link_to_key_id -> Integer,
+    votes (id) {
+        id -> Nullable<Integer>,
+        link_from_author_id -> Nullable<Integer>,
+        link_to_key_id -> Nullable<Integer>,
         value -> Nullable<Integer>,
     }
 }
