@@ -1,4 +1,3 @@
-use crate::db::models::authors::Author as AuthorModel;
 use crate::db::schema::authors::dsl::{
     author as author_col, authors as authors_table, id as author_id_col,
 };

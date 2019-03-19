@@ -11,9 +11,9 @@ use diesel::prelude::*;
 use diesel::replace_into;
 use serde_json::Value;
 
-//#[belongs_to(Author, foreign_key = "link_from_author_id")]
 #[derive(Queryable, Identifiable, Associations, Debug, Default)]
 #[belongs_to(Key, foreign_key = "link_to_key_id")]
+#[belongs_to(Author, foreign_key = "link_from_author_id")]
 pub struct Vote {
     pub id: Option<i32>,
     pub link_from_author_id: Option<i32>,

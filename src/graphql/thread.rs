@@ -4,7 +4,7 @@ use super::like::*;
 use super::post::*;
 use crate::db::models::keys::*;
 use crate::db::models::votes::*;
-use crate::db::schema::keys::dsl::{id as id_column, key as key_column, keys as keys_table};
+use crate::db::schema::keys::dsl::{key as key_column, keys as keys_table};
 use crate::db::Context;
 use diesel::prelude::*;
 
