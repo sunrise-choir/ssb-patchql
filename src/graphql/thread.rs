@@ -15,6 +15,11 @@ pub struct Thread {
     pub is_private: bool,
 }
 
+#[derive(GraphQLObject)]
+pub struct LikeConnection {
+    count: i32,
+}
+
 graphql_object!(Thread: Context |&self| {
     field author(&executor) -> Author {
         let database = executor.context();
@@ -37,6 +42,7 @@ graphql_object!(Thread: Context |&self| {
 
         votes
             .iter()
+            .filter(|vote| vote.value.is_some() && vote.value.unwrap() != 0)
             .map(|vote|{
                 Like{
                     author_id: vote.link_from_author_id.unwrap(),
@@ -44,6 +50,21 @@ graphql_object!(Thread: Context |&self| {
                 }
             })
             .collect()
+    }
+    field likes_connection(&executor) -> LikeConnection {
+        let connection = executor.context().connection.lock().unwrap();
+
+        let key: Key = keys_table
+            .filter(key_column.eq(self.id.clone()))
+            .first::<Key>(&(*connection)).unwrap();
+
+        let count = Vote::belonging_to(&key)
+            .load::<Vote>(&(*connection)).unwrap()
+            .iter()
+            .filter(|vote| vote.value.is_some() && vote.value.unwrap() == 1)
+            .count();
+
+        LikeConnection{count: count as i32}
     }
     field is_private() -> bool {self.is_private}
     field id() -> &str { self.id.as_str() }

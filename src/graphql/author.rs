@@ -2,16 +2,11 @@ use crate::db::schema::authors::dsl::{
     author as author_col, authors as authors_table, id as author_id_col,
 };
 
-use crate::db::schema::abouts::dsl::{
-    abouts as abouts_table, link_from_key_id, link_to_author_id
-};
+use crate::db::schema::abouts::dsl::{abouts as abouts_table, link_from_key_id, link_to_author_id};
 
 use crate::db::schema::messages::dsl::{
-    messages as messages_table,
-    key_id as messages_key_id,
-    content as messages_content,
-    flume_seq as messages_flume_seq,
-    author_id as messages_author_id,
+    author_id as messages_author_id, content as messages_content, flume_seq as messages_flume_seq,
+    key_id as messages_key_id, messages as messages_table,
 };
 use crate::db::Context;
 use diesel::prelude::*;
@@ -23,20 +18,20 @@ pub struct Author {
 
 #[derive(Deserialize)]
 struct AboutName {
-    name: String
+    name: String,
 }
 
 #[derive(Deserialize)]
 struct AboutDescription {
-    description: String
+    description: String,
 }
 #[derive(Deserialize)]
 struct ImageInfo {
-    link: String
+    link: String,
 }
 #[derive(Deserialize)]
 struct AboutImage {
-    image: ImageInfo
+    image: ImageInfo,
 }
 graphql_object!(Author: Context |&self| {
     field name(&executor) -> Option<String> {
