@@ -1,4 +1,3 @@
-use serde_json::Value;
 use crate::db::schema::authors::dsl::{
     author as author_col, authors as authors_table, id as author_id_col,
 };
@@ -27,6 +26,18 @@ struct AboutName {
     name: String
 }
 
+#[derive(Deserialize)]
+struct AboutDescription {
+    description: String
+}
+#[derive(Deserialize)]
+struct ImageInfo {
+    link: String
+}
+#[derive(Deserialize)]
+struct AboutImage {
+    image: ImageInfo
+}
 graphql_object!(Author: Context |&self| {
     field name(&executor) -> Option<String> {
         let connection = executor.context().connection.lock().unwrap();
@@ -45,9 +56,9 @@ graphql_object!(Author: Context |&self| {
             .filter_map(|item| item)
             .map(|item| {
                 serde_json::from_str::<AboutName>(&item)
+                    .map(|item| item.name)
             })
             .filter_map(Result::ok)
-            .map(|item| item.name)
             .take(1)
             .collect::<Vec<_>>()
             .first()
@@ -56,11 +67,52 @@ graphql_object!(Author: Context |&self| {
     }
     field description(&executor) -> Option<String> {
         let connection = executor.context().connection.lock().unwrap();
-        Some(String::new())
+        abouts_table
+            .inner_join(messages_table.on(
+                    messages_key_id.eq(link_from_key_id)
+                    ))
+            .select(messages_content)
+            .order(messages_flume_seq.desc())
+            .filter(link_to_author_id.eq(self.author_id))
+            .filter(messages_author_id.eq(self.author_id))
+            .load::<Option<String>>(&(*connection))
+            .unwrap()
+            .into_iter()
+            .filter_map(|item| item)
+            .map(|item| {
+                serde_json::from_str::<AboutDescription>(&item)
+                    .map(|item| item.description)
+            })
+            .filter_map(Result::ok)
+            .take(1)
+            .collect::<Vec<_>>()
+            .first()
+            .map(|s| {(*s).clone()})
     }
     field image_link(&executor) -> Option<String> {
         let connection = executor.context().connection.lock().unwrap();
-        Some(String::new())
+        abouts_table
+            .inner_join(messages_table.on(
+                    messages_key_id.eq(link_from_key_id)
+                    ))
+            .select(messages_content)
+            .order(messages_flume_seq.desc())
+            .filter(link_to_author_id.eq(self.author_id))
+            .filter(messages_author_id.eq(self.author_id))
+            .load::<Option<String>>(&(*connection))
+            .unwrap()
+            .into_iter()
+            .filter_map(|item| item)
+            .map(|item| {
+                serde_json::from_str::<AboutImage>(&item)
+                    .map(|item| item.image.link)
+            })
+            .filter_map(Result::ok)
+            .take(1)
+            .collect::<Vec<_>>()
+            .first()
+            .map(|s| {(*s).clone()})
+
     }
     field id(&executor) -> String {
         let connection = executor.context().connection.lock().unwrap();
