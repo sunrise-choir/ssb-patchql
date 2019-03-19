@@ -31,7 +31,7 @@ graphql_object!(Author: Context |&self| {
     field name(&executor) -> Option<String> {
         let connection = executor.context().connection.lock().unwrap();
 
-        let contents: Vec<Option<String>> = abouts_table
+        abouts_table
             .inner_join(messages_table.on(
                     messages_key_id.eq(link_from_key_id)
                     ))
@@ -39,35 +39,20 @@ graphql_object!(Author: Context |&self| {
             .order(messages_flume_seq.desc())
             .filter(link_to_author_id.eq(self.author_id))
             .filter(messages_author_id.eq(self.author_id))
-            .load(&(*connection))
-            .unwrap();
-
-        println!("{:?}", contents);
-
-        //remove empty strings (doubt it will ever happen anyway)
-        let strings = contents.into_iter()
-            .filter(|item| item.is_some())
-            .map(|item| item.unwrap())
-            .collect::<Vec<String>>();
-
-        let names = strings
-            .iter()
+            .load::<Option<String>>(&(*connection))
+            .unwrap()
+            .into_iter()
+            .filter_map(|item| item)
             .map(|item| {
                 serde_json::from_str::<AboutName>(&item)
             })
-            .filter(|item| item.is_ok())
-            .map(|item| item.unwrap())
+            .filter_map(Result::ok)
             .map(|item| item.name)
             .take(1)
-            .collect::<Vec<_>>();
-
-        let name: String = names
+            .collect::<Vec<_>>()
             .first()
             .map(|s| {(*s).clone()})
-            .unwrap_or_else(|| String::new());
 
-
-        Some(name)
     }
     field description(&executor) -> Option<String> {
         let connection = executor.context().connection.lock().unwrap();
