@@ -90,9 +90,9 @@ table! {
 table! {
     votes (id) {
         id -> Nullable<Integer>,
-        link_from_author_id -> Nullable<Integer>,
-        link_to_key_id -> Nullable<Integer>,
-        value -> Nullable<Integer>,
+        link_from_author_id -> Integer,
+        link_to_key_id -> Integer,
+        value -> Integer,
     }
 }
 

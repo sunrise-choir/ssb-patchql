@@ -37,11 +37,11 @@ graphql_object!(Post: Context |&self| {
 
         votes
             .iter()
-            .filter(|vote| vote.value.is_some() && vote.value.unwrap() != 0)
+            .filter(|vote| vote.value != 0)
             .map(|vote|{
                 Like{
-                    author_id: vote.link_from_author_id.unwrap(),
-                    value: vote.value.unwrap()
+                    author_id: vote.link_from_author_id,
+                    value: vote.value
                 }
             })
             .collect()
@@ -53,7 +53,7 @@ graphql_object!(Post: Context |&self| {
             .filter(link_to_key_col.eq(self.key_id))
             .load::<Vote>(&(*connection)).unwrap()
             .iter()
-            .filter(|vote| vote.value.is_some() && vote.value.unwrap() == 1)
+            .filter(|vote| vote.value == 1)
             .count();
 
         LikeConnection{count: count as i32}
