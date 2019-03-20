@@ -38,29 +38,14 @@ pub fn insert_abouts(connection: &SqliteConnection, message: &SsbMessage, messag
     }
 }
 
-pub trait About {
-    fn about(&self) -> &str;
-}
-
 #[derive(Deserialize)]
 pub struct AboutName {
     pub name: String,
 }
 
-impl About for AboutName {
-    fn about(&self) -> &str {
-        &self.name
-    }
-}
-
 #[derive(Deserialize)]
 pub struct AboutDescription {
     pub description: String,
-}
-impl About for AboutDescription {
-    fn about(&self) -> &str {
-        &self.description
-    }
 }
 #[derive(Deserialize)]
 pub struct ImageInfo {
@@ -70,11 +55,29 @@ pub struct ImageInfo {
 pub struct AboutImage {
     pub image: ImageInfo,
 }
+
+pub trait About {
+    fn about(&self) -> &str;
+}
+
+impl About for AboutName {
+    fn about(&self) -> &str {
+        &self.name
+    }
+}
+
+impl About for AboutDescription {
+    fn about(&self) -> &str {
+        &self.description
+    }
+}
+
 impl About for AboutImage {
     fn about(&self) -> &str {
         &self.image.link
     }
 }
+
 pub fn get_author_abouts<T: About + serde::de::DeserializeOwned>(
     connection: &SqliteConnection,
     author_id: i32,
@@ -90,11 +93,10 @@ pub fn get_author_abouts<T: About + serde::de::DeserializeOwned>(
         .unwrap()
         .into_iter()
         .map(|item| {
-            serde_json::from_str::<T>(&item).map(|item| -> String { item.about().to_string() })
+            serde_json::from_str::<T>(&item).map(|item| item.about().to_string() )
         })
         .filter_map(Result::ok)
         .take(1)
         .collect::<Vec<_>>()
-        .first()
-        .cloned()
+        .pop()
 }
