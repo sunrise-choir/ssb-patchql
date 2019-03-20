@@ -29,7 +29,6 @@ graphql_object!(Thread: Context |&self| {
     field replies(&executor) -> Vec<Post>{
         let connection = executor.context().connection.lock().unwrap();
 
-
         messages_table
             .select((messages_content, messages_key_id))
             .filter(messages_root_key_id.eq(self.root.key_id))
