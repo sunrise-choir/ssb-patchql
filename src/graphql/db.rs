@@ -78,7 +78,7 @@ graphql_object!(DbMutation: Context |&self| {
                         .for_each(|log_entry|{
                             append_item(&(*connection), &keys, log_entry.offset, &log_entry.data).unwrap();
                         });
-                        Ok(())
+                    Ok(())
                 }).unwrap();
 
             });
