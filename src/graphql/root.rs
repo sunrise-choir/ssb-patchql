@@ -8,9 +8,10 @@ use super::input_objects::*;
 use super::like::*;
 use super::post::*;
 use super::thread::*;
-use crate::db::models::keys::*;
-use crate::db::models::messages::*;
-use crate::db::schema::keys::dsl::{key as keys_key_row, keys as keys_table};
+use crate::db::schema::keys::dsl::{id as keys_id_col, key as keys_key_col, keys as keys_table};
+use crate::db::schema::messages::dsl::{
+    content as messages_content, key_id as messages_key_id, messages as messages_table,
+};
 use crate::db::Context;
 use serde_json::Value;
 
@@ -27,19 +28,20 @@ graphql_object!(Query: Context |&self| {
 
         let connection = executor.context().connection.lock().unwrap();
 
-        let key = keys_table
-            .filter(keys_key_row.eq(id.clone()))
-            .first::<Key>(&(*connection))?;
+        let (content, key_id) = keys_table
+            .inner_join(messages_table.on(
+                    messages_key_id.nullable().eq(keys_id_col)
+                    ))
+            .select((messages_content, messages_key_id))
+            .filter(keys_key_col.eq(id.clone()))
+            .first::<(Option<String>, i32)>(&(*connection))?;
 
-        let message: Message = Message::belonging_to(&key)
-            .first(&(*connection))?;
-
-        if let Some(content) = &message.content {
-            let parsed_content: Value = serde_json::from_str(content)?;
+        if let Some(content) = content {
+            let parsed_content: Value = serde_json::from_str(&content)?;
 
             if let Value::String(text) = &parsed_content["text"] {
                 let mut root_post = Post::default();
-                root_post.key_id = key.id.unwrap();
+                root_post.key_id = key_id;
                 root_post.text = text.clone();
                 thread.root = root_post;
             }

@@ -39,7 +39,7 @@ graphql_object!(Author: Context |&self| {
 
         abouts_table
             .inner_join(messages_table.on(
-                    messages_key_id.eq(link_from_key_id)
+                    messages_key_id.nullable().eq(link_from_key_id)
                     ))
             .select(messages_content)
             .order(messages_flume_seq.desc())
@@ -64,7 +64,7 @@ graphql_object!(Author: Context |&self| {
         let connection = executor.context().connection.lock().unwrap();
         abouts_table
             .inner_join(messages_table.on(
-                    messages_key_id.eq(link_from_key_id)
+                    messages_key_id.nullable().eq(link_from_key_id)
                     ))
             .select(messages_content)
             .order(messages_flume_seq.desc())
@@ -88,7 +88,7 @@ graphql_object!(Author: Context |&self| {
         let connection = executor.context().connection.lock().unwrap();
         abouts_table
             .inner_join(messages_table.on(
-                    messages_key_id.eq(link_from_key_id)
+                    messages_key_id.nullable().eq(link_from_key_id)
                     ))
             .select(messages_content)
             .order(messages_flume_seq.desc())

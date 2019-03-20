@@ -74,16 +74,16 @@ table! {
 table! {
     messages (flume_seq) {
         flume_seq -> Nullable<BigInt>,
-        key_id -> Nullable<Integer>,
-        seq -> Nullable<Integer>,
-        received_time -> Nullable<Double>,
+        key_id -> Integer,
+        seq -> Integer,
+        received_time -> Double,
         asserted_time -> Nullable<Double>,
         root_key_id -> Nullable<Integer>,
         fork_key_id -> Nullable<Integer>,
-        author_id -> Nullable<Integer>,
+        author_id -> Integer,
         content_type -> Nullable<Text>,
         content -> Nullable<Text>,
-        is_decrypted -> Nullable<Bool>,
+        is_decrypted -> Bool,
     }
 }
 

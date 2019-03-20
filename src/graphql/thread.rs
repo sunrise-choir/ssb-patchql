@@ -34,14 +34,14 @@ graphql_object!(Thread: Context |&self| {
             .select((messages_content, messages_key_id))
             .filter(messages_root_key_id.eq(self.root.key_id))
             .filter(messages_content_type.eq("post"))
-            .load::<(Option<String>, Option<i32>)>(&(*connection))
+            .load::<(Option<String>, i32)>(&(*connection))
             .into_iter()
             .flatten()
             .filter(|(content, key_id)|{
-                content.is_some() && key_id.is_some()
+                content.is_some()
             })
             .map(|(content, key_id)|{
-                (content.unwrap(), key_id.unwrap())
+                (content.unwrap(), key_id)
             })
             .map(|(content, key_id)|{
                 (serde_json::from_str::<PostText>(&content).unwrap().text, key_id)
@@ -50,8 +50,6 @@ graphql_object!(Thread: Context |&self| {
                 Post{key_id, text }
             })
             .collect::<Vec<Post>>()
-
-        //unimplemented!()
     }
     field is_private() -> bool {self.is_private}
 });

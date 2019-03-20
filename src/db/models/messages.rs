@@ -16,16 +16,16 @@ use diesel::prelude::*;
 #[belongs_to(Key)]
 pub struct Message {
     pub flume_seq: Option<i64>,
-    pub key_id: Option<i32>,
-    pub seq: Option<i32>,
-    pub received_time: Option<f64>,
+    pub key_id: i32,
+    pub seq: i32,
+    pub received_time: f64,
     pub asserted_time: Option<f64>,
     pub root_key_id: Option<i32>,
     pub fork_key_id: Option<i32>,
-    pub author_id: Option<i32>,
+    pub author_id: i32,
     pub content_type: Option<String>,
     pub content: Option<String>,
-    pub is_decrypted: Option<bool>,
+    pub is_decrypted: bool,
 }
 
 pub fn insert_message(
@@ -55,18 +55,18 @@ pub fn insert_message(
 
     let message = Message {
         flume_seq: Some(seq),
-        key_id: Some(message_key_id),
-        seq: Some(message.value.sequence as i32),
-        received_time: Some(message.timestamp),
+        key_id: message_key_id,
+        seq: message.value.sequence as i32,
+        received_time: message.timestamp,
         asserted_time: Some(message.value.timestamp),
         root_key_id,
         fork_key_id,
-        author_id: Some(author_id),
+        author_id: author_id,
         content_type: message.value.content["type"]
             .as_str()
             .map(|content_type| content_type.to_string()),
         content: Some(message.value.content.to_string()),
-        is_decrypted: Some(is_decrypted),
+        is_decrypted: is_decrypted,
     };
 
     insert_into(messages_table)
