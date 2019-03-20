@@ -12,6 +12,7 @@ use crate::db::schema::votes::dsl::{link_to_key_id as link_to_key_col, votes as 
 #[derive(Default)]
 pub struct Post {
     pub key_id: i32,
+    pub author_id: i32,
     pub text: String,
 }
 
@@ -25,7 +26,9 @@ graphql_object!(Post: Context |&self| {
     }
 
     field author(&executor) -> Author {
-        unimplemented!()
+        let connection = executor.context().connection.lock().unwrap();
+
+        Author{author_id: self.author_id}
     }
 
     field likes(&executor) -> Vec<Like> {

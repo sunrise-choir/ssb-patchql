@@ -10,7 +10,8 @@ use super::post::*;
 use super::thread::*;
 use crate::db::schema::keys::dsl::{id as keys_id_col, key as keys_key_col, keys as keys_table};
 use crate::db::schema::messages::dsl::{
-    content as messages_content, key_id as messages_key_id, messages as messages_table,
+    author_id as messages_author_id, content as messages_content, key_id as messages_key_id,
+    messages as messages_table,
 };
 use crate::db::Context;
 use serde_json::Value;
@@ -28,19 +29,20 @@ graphql_object!(Query: Context |&self| {
 
         let connection = executor.context().connection.lock().unwrap();
 
-        let (content, key_id) = keys_table
+        let (content, key_id, author_id) = keys_table
             .inner_join(messages_table.on(
                     messages_key_id.nullable().eq(keys_id_col)
                     ))
-            .select((messages_content, messages_key_id))
+            .select((messages_content, messages_key_id, messages_author_id))
             .filter(keys_key_col.eq(id.clone()))
-            .first::<(Option<String>, i32)>(&(*connection))?;
+            .first::<(Option<String>, i32, i32)>(&(*connection))?;
 
         if let Some(content) = content {
             let parsed_content: Value = serde_json::from_str(&content)?;
 
             if let Value::String(text) = &parsed_content["text"] {
                 let mut root_post = Post::default();
+                root_post.author_id = author_id;
                 root_post.key_id = key_id;
                 root_post.text = text.clone();
                 thread.root = root_post;

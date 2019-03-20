@@ -92,9 +92,7 @@ pub fn get_author_abouts<T: About + serde::de::DeserializeOwned>(
         .load::<String>(&(*connection))
         .unwrap()
         .into_iter()
-        .map(|item| {
-            serde_json::from_str::<T>(&item).map(|item| item.about().to_string() )
-        })
+        .map(|item| serde_json::from_str::<T>(&item).map(|item| item.about().to_string()))
         .filter_map(Result::ok)
         .take(1)
         .collect::<Vec<_>>()
