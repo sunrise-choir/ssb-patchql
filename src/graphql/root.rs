@@ -38,8 +38,10 @@ graphql_object!(Query: Context |&self| {
             let parsed_content: Value = serde_json::from_str(content)?;
 
             if let Value::String(text) = &parsed_content["text"] {
-                thread.text = text.clone();
-                thread.id = id;
+                let mut root_post = Post::default();
+                root_post.key_id = key.id.unwrap();
+                root_post.text = text.clone();
+                thread.root = root_post;
             }
         }
 
@@ -54,11 +56,12 @@ graphql_object!(Query: Context |&self| {
     }
 
     field post(&executor, id: String ) -> FieldResult<Post> {
+        unimplemented!();
         // Get the context from the executor.
-        let context = executor.context();
-        let mut post = Post::default();
-        post.id = id;
-        Ok(post)
+        //let context = executor.context();
+        //let mut post = Post::default();
+        //post.key_id = id;
+        //Ok(post)
     }
 
     field author(&executor, id: String) -> FieldResult<Author> {

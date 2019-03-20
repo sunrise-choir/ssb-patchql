@@ -1,19 +1,21 @@
 use super::author::*;
-use super::input_objects::*;
-use super::like::*;
 use super::post::*;
-use super::like_connection::*;
-use crate::db::models::keys::*;
-use crate::db::models::votes::*;
-use crate::db::schema::keys::dsl::{key as key_column, keys as keys_table};
+use crate::db::schema::messages::dsl::{
+    content as messages_content, content_type as messages_content_type, key_id as messages_key_id,
+    messages as messages_table, root_key_id as messages_root_key_id,
+};
 use crate::db::Context;
 use diesel::prelude::*;
 
 #[derive(Default)]
 pub struct Thread {
-    pub id: String,
-    pub text: String,
     pub is_private: bool,
+    pub root: Post,
+}
+
+#[derive(Deserialize)]
+struct PostText {
+    text: String,
 }
 
 graphql_object!(Thread: Context |&self| {
@@ -21,48 +23,35 @@ graphql_object!(Thread: Context |&self| {
         let database = executor.context();
         Author::default()
     }
-    field posts(&executor, order_by = (OrderBy::Received): OrderBy) -> Vec<Post> {
-        let database = executor.context();
-
-        vec![Post::default(), Post::default()]
+    field root(&executor) -> &Post {
+        &self.root
     }
-    field likes(&executor) -> Vec<Like> {
+    field replies(&executor) -> Vec<Post>{
         let connection = executor.context().connection.lock().unwrap();
 
-        let key: Key = keys_table
-            .filter(key_column.eq(self.id.clone()))
-            .first::<Key>(&(*connection)).unwrap();
 
-        let votes: Vec<Vote> = Vote::belonging_to(&key)
-            .load(&(*connection)).unwrap();
-
-        votes
-            .iter()
-            .filter(|vote| vote.value.is_some() && vote.value.unwrap() != 0)
-            .map(|vote|{
-                Like{
-                    author_id: vote.link_from_author_id.unwrap(),
-                    value: vote.value.unwrap()
-                }
+        messages_table
+            .select((messages_content, messages_key_id))
+            .filter(messages_root_key_id.eq(self.root.key_id))
+            .filter(messages_content_type.eq("post"))
+            .load::<(Option<String>, Option<i32>)>(&(*connection))
+            .into_iter()
+            .flatten()
+            .filter(|(content, key_id)|{
+                content.is_some() && key_id.is_some()
             })
-            .collect()
-    }
-    field likes_connection(&executor) -> LikeConnection {
-        let connection = executor.context().connection.lock().unwrap();
+            .map(|(content, key_id)|{
+                (content.unwrap(), key_id.unwrap())
+            })
+            .map(|(content, key_id)|{
+                (serde_json::from_str::<PostText>(&content).unwrap().text, key_id)
+            })
+            .map(|(text, key_id)|{
+                Post{key_id, text }
+            })
+            .collect::<Vec<Post>>()
 
-        let key: Key = keys_table
-            .filter(key_column.eq(self.id.clone()))
-            .first::<Key>(&(*connection)).unwrap();
-
-        let count = Vote::belonging_to(&key)
-            .load::<Vote>(&(*connection)).unwrap()
-            .iter()
-            .filter(|vote| vote.value.is_some() && vote.value.unwrap() == 1)
-            .count();
-
-        LikeConnection{count: count as i32}
+        //unimplemented!()
     }
     field is_private() -> bool {self.is_private}
-    field id() -> &str { self.id.as_str() }
-    field text() -> &str {self.text.as_str() }
 });
