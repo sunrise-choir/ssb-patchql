@@ -1,3 +1,4 @@
+use juniper::FieldResult;
 use crate::db::*;
 use flumedb::offset_log::{LogEntry, OffsetLogIter};
 use flumedb::BidirIterator;
@@ -30,7 +31,7 @@ impl<T> Iterator for LogIter<T> {
 }
 
 graphql_object!(DbMutation: Context |&self| {
-    field process(&executor, chunk_size = 100: i32) -> ProcessResults {
+    field process(&executor, chunk_size = 100: i32) -> FieldResult<ProcessResults> {
         //TODO: get the secret key from env
         let secret_key_bytes = &vec![0];
         let secret_key = SecretKey::from_slice(secret_key_bytes).unwrap_or_else(|| {
@@ -44,17 +45,16 @@ graphql_object!(DbMutation: Context |&self| {
 
 
         let context = executor.context();
-        let connection = context.connection.lock().unwrap();
+        let connection = context.connection.lock()?;
 
         //We're using Max of flume_seq.
         //When the db is empty, we'll get None.
         //When there is one item in the db, we'll get 0 (it's the first seq number you get)
         //When there's more than one you'll get some >0 number
-        let max_seq = get_latest(&connection)
-            .unwrap()
+        let max_seq = get_latest(&connection)?
             .map(|val| val as u64);
 
-        let log = context.log.lock().unwrap(); //block here until any other thread is done with the log.
+        let log = context.log.lock()?; //block here until any other thread is done with the log.
 
         let num_to_skip: usize = match max_seq {
             None => 0,
@@ -80,11 +80,10 @@ graphql_object!(DbMutation: Context |&self| {
                         });
                     Ok(())
                 }).unwrap();
-
             });
 
-        let new_latest = get_latest(&connection).unwrap();
-        ProcessResults{chunk_size, latest_sequence: new_latest}
+        let new_latest = get_latest(&connection)?;
+        Ok(ProcessResults{chunk_size, latest_sequence: new_latest})
     }
 });
 

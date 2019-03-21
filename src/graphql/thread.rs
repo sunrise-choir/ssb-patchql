@@ -9,7 +9,6 @@ use diesel::prelude::*;
 
 #[derive(Default)]
 pub struct Thread {
-    pub is_private: bool,
     pub root: Post,
 }
 
@@ -26,25 +25,16 @@ graphql_object!(Thread: Context |&self| {
         let connection = executor.context().connection.lock().unwrap();
 
         messages_table
-            .select((messages_content, messages_key_id, messages_author_id))
+            .select(messages_key_id)
             .filter(messages_root_key_id.eq(self.root.key_id))
             .filter(messages_content_type.eq("post"))
-            .load::<(Option<String>, i32, i32)>(&(*connection))
+            .load::<i32>(&(*connection))
             .into_iter()
             .flatten()
-            .filter(|(content, key_id, _)|{
-                content.is_some()
-            })
-            .map(|(content, key_id, author_id)|{
-                (content.unwrap(), key_id, author_id)
-            })
-            .map(|(content, key_id, author_id)|{
-                (serde_json::from_str::<PostText>(&content).unwrap().text, key_id, author_id)
-            })
-            .map(|(text, key_id, author_id)|{
-                Post{key_id, text, author_id }
+            .map(|key_id|{
+                Post{key_id}
             })
             .collect::<Vec<Post>>()
     }
-    field is_private() -> bool {self.is_private}
+    field is_private() -> bool {false}
 });

@@ -1,3 +1,4 @@
+use juniper::FieldResult;
 use super::author::*;
 use crate::db::*;
 
@@ -8,11 +9,11 @@ pub struct Like {
 }
 
 graphql_object!(Like: Context |&self| {
-    field author(&executor) -> Option<Author> {
-        let connection = executor.context().connection.lock().unwrap();
+    field author(&executor) -> FieldResult<Author> {
+        let connection = executor.context().connection.lock()?;
 
         let author = Author{author_id: self.author_id};
-        Some(author)
+        Ok(author)
     },
     field value()-> i32{self.value}
 });

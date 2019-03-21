@@ -25,31 +25,23 @@ pub type Schema = RootNode<'static, Query, DbMutation>;
 graphql_object!(Query: Context |&self| {
 
     field thread(&executor, id: String, order_by = (OrderBy::Received): OrderBy) -> FieldResult<Thread> {
-        let mut thread = Thread::default();
 
-        let connection = executor.context().connection.lock().unwrap();
+        let connection = executor.context().connection.lock()?;
 
-        let (content, key_id, author_id) = keys_table
+        let thread = keys_table
             .inner_join(messages_table.on(
                     messages_key_id.nullable().eq(keys_id_col)
                     ))
-            .select((messages_content, messages_key_id, messages_author_id))
+            .select(messages_key_id)
             .filter(keys_key_col.eq(id.clone()))
-            .first::<(Option<String>, i32, i32)>(&(*connection))?;
-
-        if let Some(content) = content {
-            let parsed_content: Value = serde_json::from_str(&content)?;
-
-            if let Value::String(text) = &parsed_content["text"] {
-                let mut root_post = Post::default();
-                root_post.author_id = author_id;
-                root_post.key_id = key_id;
-                root_post.text = text.clone();
-                thread.root = root_post;
-            }
-        }
+            .first::<i32>(&(*connection))
+            .map(|key_id|{
+                let root = Post{key_id};
+                Thread{root}
+            })?;
 
         Ok(thread)
+
     }
 
     field feed(&executor, author_id: Option<String>, privacy = (Privacy::Public): Privacy, order_by = (OrderBy::Received): OrderBy) -> FieldResult<Feed> {
