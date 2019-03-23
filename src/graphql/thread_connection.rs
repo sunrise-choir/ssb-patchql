@@ -27,14 +27,17 @@ impl ThreadConnection {
         connection: &SqliteConnection,
         start_cursor: Option<String>,
         next: i32,
-    ) -> ThreadConnection {
+    ) -> Result<ThreadConnection, String> {
         let start_seq = match start_cursor {
-            None => std::i64::MAX,
+            None => Ok(std::i64::MAX),
             Some(ref encoded) => match base64::decode(&encoded) {
-                Ok(bytes) => LittleEndian::read_i64(bytes.as_slice()),
-                Err(_) => std::i64::MAX,
+                Ok(ref bytes) if bytes.len() < 8 => {
+                    Err("Error decoding cursor. Is it a valid base64 encoded i64?".to_string())
+                }
+                Ok(bytes) => Ok(LittleEndian::read_i64(bytes.as_slice())),
+                Err(err) => Err(err.to_string()),
             },
-        };
+        }?;
 
         let results = messages_table
             .select((messages_key_id, messages_flume_seq))
@@ -63,11 +66,11 @@ impl ThreadConnection {
             has_next_page,
         };
 
-        ThreadConnection {
+        Ok(ThreadConnection {
             next,
             thread_keys,
             page_info,
-        }
+        })
     }
 }
 
