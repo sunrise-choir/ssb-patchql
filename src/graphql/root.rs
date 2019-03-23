@@ -14,7 +14,6 @@ use crate::db::schema::messages::dsl::{
     messages as messages_table,
 };
 use crate::db::Context;
-use serde_json::Value;
 
 pub struct Query;
 
@@ -46,29 +45,26 @@ graphql_object!(Query: Context |&self| {
 
     field feed(&executor, author_id: Option<String>, privacy = (Privacy::Public): Privacy, order_by = (OrderBy::Received): OrderBy) -> FieldResult<Feed> {
         // Get the context from the executor.
-        let context = executor.context();
+        let connection = executor.context().connection.lock()?;
         let feed = Feed::default();
         Ok(feed)
     }
 
     field post(&executor, id: String ) -> FieldResult<Post> {
-        unimplemented!();
-        // Get the context from the executor.
-        //let context = executor.context();
-        //let mut post = Post::default();
-        //post.key_id = id;
-        //Ok(post)
+        let connection = executor.context().connection.lock()?;
+
+        let post = keys_table
+            .inner_join(messages_table.on(
+                    messages_key_id.nullable().eq(keys_id_col)
+                    ))
+            .select(messages_key_id)
+            .filter(keys_key_col.eq(id.clone()))
+            .first::<i32>(&(*connection))
+            .map(|key_id|{
+                Post{key_id}
+            })?;
+
+        Ok(post)
     }
 
-    field author(&executor, id: String) -> FieldResult<Author> {
-        // Get the context from the executor.
-        let context = executor.context();
-        Ok(Author::default())
-    }
-
-    field likes(&executor, id: String) -> FieldResult<Vec<Like>> {
-        // Get the context from the executor.
-        let context = executor.context();
-        Ok(vec![Like::default()])
-    }
 });

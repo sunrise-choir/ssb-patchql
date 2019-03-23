@@ -8,3 +8,4 @@ pub mod mention;
 pub mod post;
 pub mod root;
 pub mod thread;
+pub mod thread_connection;

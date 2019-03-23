@@ -12,5 +12,5 @@ CREATE TABLE IF NOT EXISTS messages (
   is_decrypted BOOLEAN NOT NULL 
 );
 CREATE INDEX IF NOT EXISTS messages_author_id_index ON messages(author_id);
-CREATE INDEX IF NOT EXISTS messages_content_type_index ON messages(content_type);
+CREATE INDEX IF NOT EXISTS messages_content_type_index_flume_seq ON messages(content_type, flume_seq);
 CREATE INDEX IF NOT EXISTS messages_key_id_index ON messages(root_key_id);

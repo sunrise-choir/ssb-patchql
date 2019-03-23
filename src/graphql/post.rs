@@ -73,7 +73,6 @@ graphql_object!(Post: Context |&self| {
         Ok(LikeConnection{count: count as i32})
     }
     field text(&executor) -> FieldResult<String> { 
-
         let connection = executor.context().connection.lock()?;
         let content = messages_table
             .select(sql::<diesel::sql_types::Text>("content"))

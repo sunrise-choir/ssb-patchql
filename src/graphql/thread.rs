@@ -12,11 +12,6 @@ pub struct Thread {
     pub root: Post,
 }
 
-#[derive(Deserialize)]
-struct PostText {
-    text: String,
-}
-
 graphql_object!(Thread: Context |&self| {
     field root(&executor) -> &Post {
         &self.root

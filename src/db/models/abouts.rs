@@ -8,6 +8,7 @@ use crate::db::schema::messages::dsl::{
 };
 use crate::db::SqliteConnection;
 use crate::lib::*;
+use diesel::result::Error;
 use diesel::dsl::sql;
 use diesel::insert_into;
 use diesel::prelude::*;
@@ -81,20 +82,21 @@ impl About for AboutImage {
 pub fn get_author_abouts<T: About + serde::de::DeserializeOwned>(
     connection: &SqliteConnection,
     author_id: i32,
-) -> Option<String> {
-    abouts
+) -> Result<Option<String>, Error> {
+    let about = abouts
         .inner_join(messages_table.on(messages_key_id.nullable().eq(link_from_key_id)))
         .select(sql::<diesel::sql_types::Text>("content"))
         .order(messages_flume_seq.desc())
         .filter(link_to_author_id.eq(author_id))
         .filter(messages_author_id.eq(author_id))
         .filter(messages_content.is_not_null())
-        .load::<String>(&(*connection))
-        .unwrap()
+        .load::<String>(&(*connection))?
         .into_iter()
         .map(|item| serde_json::from_str::<T>(&item).map(|item| item.about().to_string()))
         .filter_map(Result::ok)
         .take(1)
         .collect::<Vec<_>>()
-        .pop()
+        .pop();
+
+    Ok(about)
 }

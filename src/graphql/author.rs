@@ -5,6 +5,7 @@ use crate::db::schema::authors::dsl::{
 use crate::db::models::abouts::{get_author_abouts, AboutDescription, AboutImage, AboutName};
 use crate::db::Context;
 use diesel::prelude::*;
+use juniper::FieldResult;
 
 #[derive(Default)]
 pub struct Author {
@@ -12,27 +13,29 @@ pub struct Author {
 }
 
 graphql_object!(Author: Context |&self| {
-    field name(&executor) -> Option<String> {
+    field name(&executor) -> FieldResult<Option<String>> {
         let connection = executor.context().connection.lock().unwrap();
-        get_author_abouts::<AboutName>(&(*connection), self.author_id)
+        let name = get_author_abouts::<AboutName>(&(*connection), self.author_id)?;
+        Ok(name)
 
     }
-    field description(&executor) -> Option<String> {
+    field description(&executor) -> FieldResult<Option<String>> {
         let connection = executor.context().connection.lock().unwrap();
-        get_author_abouts::<AboutDescription>(&(*connection), self.author_id)
+        let description = get_author_abouts::<AboutDescription>(&(*connection), self.author_id)?;
+        Ok(description)
     }
-    field image_link(&executor) -> Option<String> {
+    field image_link(&executor) -> FieldResult<Option<String>> {
         let connection = executor.context().connection.lock().unwrap();
-        get_author_abouts::<AboutImage>(&(*connection), self.author_id)
+        let image_link = get_author_abouts::<AboutImage>(&(*connection), self.author_id)?;
+        Ok(image_link)
 
     }
-    field id(&executor) -> String {
+    field id(&executor) -> FieldResult<String> {
         let connection = executor.context().connection.lock().unwrap();
-        authors_table
+        let id = authors_table
             .select(author_col)
             .filter(author_id_col.eq(self.author_id))
-            .first::<String>(&(*connection))
-            .unwrap()
-
+            .first::<String>(&(*connection))?;
+        Ok(id)
     }
 });
