@@ -1,8 +1,8 @@
-use juniper::FieldResult;
 use crate::db::*;
 use flumedb::offset_log::{LogEntry, OffsetLogIter};
 use flumedb::BidirIterator;
 use itertools::Itertools;
+use juniper::FieldResult;
 
 use crate::db::models::append_item;
 use diesel::prelude::*;

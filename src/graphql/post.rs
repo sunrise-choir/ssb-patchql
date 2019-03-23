@@ -1,16 +1,19 @@
 use super::author::*;
 use super::like::*;
 use crate::db::*;
-use diesel::prelude::*;
-use juniper::{FieldResult};
 use diesel::dsl::sql;
+use diesel::prelude::*;
+use juniper::FieldResult;
 
 use super::like_connection::*;
 use crate::db::models::keys::*;
 use crate::db::models::votes::*;
 use crate::db::schema::keys::dsl::keys as keys_table;
+use crate::db::schema::messages::dsl::{
+    author_id as messages_author_id, content as messages_content, key_id as messages_key_id,
+    messages as messages_table,
+};
 use crate::db::schema::votes::dsl::{link_to_key_id as link_to_key_col, votes as votes_table};
-use crate::db::schema::messages::dsl::{messages as messages_table, author_id as messages_author_id, content as messages_content, key_id as messages_key_id};
 
 #[derive(Default)]
 pub struct Post {
@@ -19,7 +22,7 @@ pub struct Post {
 
 #[derive(Deserialize)]
 struct PostText {
-    text: String
+    text: String,
 }
 graphql_object!(Post: Context |&self| {
     field id(&executor) -> FieldResult<String> {
@@ -35,6 +38,7 @@ graphql_object!(Post: Context |&self| {
         let connection = executor.context().connection.lock()?;
         let author_id = messages_table
             .select(messages_author_id)
+            .filter(messages_key_id.eq(self.key_id))
             .first(&(*connection))?;
 
         Ok(Author{author_id})
@@ -72,7 +76,7 @@ graphql_object!(Post: Context |&self| {
 
         Ok(LikeConnection{count: count as i32})
     }
-    field text(&executor) -> FieldResult<String> { 
+    field text(&executor) -> FieldResult<String> {
         let connection = executor.context().connection.lock()?;
         let content = messages_table
             .select(sql::<diesel::sql_types::Text>("content"))

@@ -1,6 +1,5 @@
 use super::post::*;
 use crate::db::schema::messages::dsl::{
-    author_id as messages_author_id, content as messages_content,
     content_type as messages_content_type, key_id as messages_key_id, messages as messages_table,
     root_key_id as messages_root_key_id,
 };

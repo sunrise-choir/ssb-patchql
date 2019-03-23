@@ -1,18 +1,13 @@
 use diesel::prelude::*;
 use juniper::{FieldResult, RootNode};
 
-use super::author::*;
 use super::db::DbMutation;
 use super::feed::*;
 use super::input_objects::*;
-use super::like::*;
 use super::post::*;
 use super::thread::*;
 use crate::db::schema::keys::dsl::{id as keys_id_col, key as keys_key_col, keys as keys_table};
-use crate::db::schema::messages::dsl::{
-    author_id as messages_author_id, content as messages_content, key_id as messages_key_id,
-    messages as messages_table,
-};
+use crate::db::schema::messages::dsl::{key_id as messages_key_id, messages as messages_table};
 use crate::db::Context;
 
 pub struct Query;

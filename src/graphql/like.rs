@@ -1,6 +1,6 @@
-use juniper::FieldResult;
 use super::author::*;
 use crate::db::*;
+use juniper::FieldResult;
 
 #[derive(Default)]
 pub struct Like {

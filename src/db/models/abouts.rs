@@ -8,10 +8,10 @@ use crate::db::schema::messages::dsl::{
 };
 use crate::db::SqliteConnection;
 use crate::lib::*;
-use diesel::result::Error;
 use diesel::dsl::sql;
 use diesel::insert_into;
 use diesel::prelude::*;
+use diesel::result::Error;
 use serde_json::Value;
 
 pub fn insert_abouts(connection: &SqliteConnection, message: &SsbMessage, message_key_id: i32) {
