@@ -1,7 +1,6 @@
 use diesel::prelude::*;
-use juniper::{FieldResult, RootNode};
+use juniper::{FieldResult};
 
-use super::db::DbMutation;
 use super::feed::*;
 use super::input_objects::*;
 use super::post::*;
@@ -14,7 +13,8 @@ pub struct Query;
 
 // A root schema consists of a query and a mutation.
 // Request queries can be executed against a RootNode.
-pub type Schema = RootNode<'static, Query, DbMutation>;
+// Although this is not used by the iron interface so is making warnings.
+//pub type Schema = RootNode<'static, Query, DbMutation>;
 
 graphql_object!(Query: Context |&self| {
 
