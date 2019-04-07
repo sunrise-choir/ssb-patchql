@@ -12,6 +12,7 @@ use crate::db::schema::keys::dsl::keys as keys_table;
 use crate::db::schema::messages::dsl::{
     author_id as messages_author_id, content as messages_content, key_id as messages_key_id,
     root_key_id, fork_key_id,
+    content_type as messages_content_type,
     messages as messages_table,
 };
 use crate::db::schema::votes::dsl::{link_to_key_id as votes_link_to_key_col, votes as votes_table};
@@ -110,6 +111,9 @@ graphql_object!(Post: Context |&self| {
                     ))
             .select(links_link_from_key_id)
             .filter(links_link_to_key_col.eq(self.key_id))
+            .filter(messages_content_type.ne("about"))
+            .filter(messages_content_type.ne("tag"))
+            .filter(messages_content_type.ne("vote"))
             .filter(root_key_id.ne(self.key_id)) //If this message is the root, then they are a reply to this message, not a backlink reference
             .filter(fork_key_id.ne(self.key_id)) //If this message is the head of the fork, then they are a fork of this message, not a backlink reference
             .load::<i32>(&(*connection))?
