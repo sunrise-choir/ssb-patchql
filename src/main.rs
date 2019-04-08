@@ -15,9 +15,9 @@ extern crate diesel_migrations;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde_json;
-extern crate mount;
 extern crate iron_cors;
+extern crate mount;
+extern crate serde_json;
 
 mod db;
 mod graphql;
@@ -30,12 +30,12 @@ use std::env;
 use db::*;
 use graphql::db::DbMutation;
 use graphql::root::*;
-use std::sync::{Arc, Mutex};
 use iron::prelude::*;
 use iron_cors::CorsMiddleware;
 use juniper_iron::{GraphQLHandler, GraphiQLHandler};
 use logger::Logger;
 use mount::Mount;
+use std::sync::{Arc, Mutex};
 
 fn main() {
     env_logger::init();
@@ -54,12 +54,14 @@ fn main() {
     let middleware = CorsMiddleware::with_allow_any();
 
     let graphql_endpoint = GraphQLHandler::new(
-        move |_| Ok(Context{
-            connection: locked_connection_ref.clone(),
-            log: locked_log_ref.clone(),
-        }),
+        move |_| {
+            Ok(Context {
+                connection: locked_connection_ref.clone(),
+                log: locked_log_ref.clone(),
+            })
+        },
         Query,
-        DbMutation::default()
+        DbMutation::default(),
     );
     let graphiql_endpoint = GraphiQLHandler::new("/graphql");
 

@@ -9,14 +9,18 @@ use super::like_connection::*;
 use crate::db::models::keys::*;
 use crate::db::models::votes::*;
 use crate::db::schema::keys::dsl::keys as keys_table;
-use crate::db::schema::messages::dsl::{
-    author_id as messages_author_id, content as messages_content, key_id as messages_key_id,
-    root_key_id, fork_key_id,
-    content_type as messages_content_type,
-    messages as messages_table,
+use crate::db::schema::links::dsl::{
+    link_from_key_id as links_link_from_key_id, link_to_key_id as links_link_to_key_col,
+    links as links_table,
 };
-use crate::db::schema::votes::dsl::{link_to_key_id as votes_link_to_key_col, votes as votes_table};
-use crate::db::schema::links::dsl::{link_to_key_id as links_link_to_key_col, links as links_table, link_from_key_id as links_link_from_key_id};
+use crate::db::schema::messages::dsl::{
+    author_id as messages_author_id, content as messages_content,
+    content_type as messages_content_type, fork_key_id, key_id as messages_key_id,
+    messages as messages_table, root_key_id,
+};
+use crate::db::schema::votes::dsl::{
+    link_to_key_id as votes_link_to_key_col, votes as votes_table,
+};
 
 #[derive(Default)]
 pub struct Post {
@@ -98,13 +102,6 @@ graphql_object!(Post: Context |&self| {
         //and who have a different root
         //and who have a different fork
 
-        // first, we need this Post's root and fork values
-        //
-        let (this_root_key_id, this_fork_key_id) = messages_table
-            .select((root_key_id, fork_key_id))
-            .filter(messages_key_id.eq(self.key_id))
-            .first::<(Option<i32>, Option<i32>)>(&(*connection))?;
-
         let posts = links_table
             .inner_join(messages_table.on(
                     messages_key_id.eq(links_link_to_key_col)
@@ -116,6 +113,33 @@ graphql_object!(Post: Context |&self| {
             .filter(messages_content_type.ne("vote"))
             .filter(root_key_id.ne(self.key_id)) //If this message is the root, then they are a reply to this message, not a backlink reference
             .filter(fork_key_id.ne(self.key_id)) //If this message is the head of the fork, then they are a fork of this message, not a backlink reference
+            .load::<i32>(&(*connection))?
+            .iter()
+            .map(|key_id|{
+                Post{
+                    key_id: *key_id
+                }
+            })
+            .collect::<Vec<Post>>();
+
+        Ok(posts)
+    }
+    field forks(&executor) -> FieldResult<Vec<Post>> {
+        let connection = executor.context().connection.lock()?;
+
+        // first, we need this Post's root key id
+        let this_root_key_id = messages_table
+            .select(root_key_id)
+            .filter(messages_key_id.eq(self.key_id))
+            .first::<Option<i32>>(&(*connection))?;
+
+        let posts = messages_table
+            .select(messages_key_id)
+            .filter(messages_content_type.ne("about"))
+            .filter(messages_content_type.ne("tag"))
+            .filter(messages_content_type.ne("vote"))
+            .filter(root_key_id.eq(self.key_id)) // A fork message will have its root set pointing to this message
+            .filter(fork_key_id.eq(this_root_key_id)) // A fork message will have its fork key pointing at the same root message as this one.
             .load::<i32>(&(*connection))?
             .iter()
             .map(|key_id|{

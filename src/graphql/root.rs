@@ -1,5 +1,5 @@
 use diesel::prelude::*;
-use juniper::{FieldResult};
+use juniper::FieldResult;
 
 use super::feed::*;
 use super::input_objects::*;
