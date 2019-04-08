@@ -5,6 +5,8 @@ pub mod input_objects;
 pub mod like;
 pub mod like_connection;
 pub mod mention;
+pub mod mention_connection;
+pub mod notification;
 pub mod post;
 pub mod root;
 pub mod thread;

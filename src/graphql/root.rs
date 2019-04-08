@@ -3,8 +3,12 @@ use juniper::FieldResult;
 
 use super::feed::*;
 use super::input_objects::*;
+use super::notification::*;
 use super::post::*;
 use super::thread::*;
+use crate::db::schema::authors::dsl::{
+    author as authors_author, authors as authors_table, id as authors_id,
+};
 use crate::db::schema::keys::dsl::{id as keys_id_col, key as keys_key_col, keys as keys_table};
 use crate::db::schema::messages::dsl::{key_id as messages_key_id, messages as messages_table};
 use crate::db::Context;
@@ -62,4 +66,19 @@ graphql_object!(Query: Context |&self| {
         Ok(post)
     }
 
+    field notification(&executor, author_id: String, after_cursor: Option<String>) -> FieldResult<Notification> {
+
+        let connection = executor.context().connection.lock()?;
+
+        let author_id = authors_table
+            .select(authors_id)
+            .filter(authors_author.eq(author_id))
+            .first::<Option<i32>>(&(*connection))?
+            .ok_or("Author not found")?;
+
+        Ok(Notification{
+            author_id,
+            after_cursor: 0
+        })
+    }
 });
