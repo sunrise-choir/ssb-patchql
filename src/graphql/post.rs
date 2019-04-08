@@ -111,8 +111,15 @@ graphql_object!(Post: Context |&self| {
             .filter(messages_content_type.ne("about"))
             .filter(messages_content_type.ne("tag"))
             .filter(messages_content_type.ne("vote"))
-            .filter(root_key_id.ne(self.key_id)) //If this message is the root, then they are a reply to this message, not a backlink reference
-            .filter(fork_key_id.ne(self.key_id)) //If this message is the head of the fork, then they are a fork of this message, not a backlink reference
+            .filter(
+                root_key_id.is_not_null().and(root_key_id.ne(self.key_id))
+                    .or(root_key_id.is_null())
+                )
+
+            .filter(
+                fork_key_id.is_not_null().and(fork_key_id.ne(self.key_id))
+                    .or(fork_key_id.is_null())
+                )
             .load::<i32>(&(*connection))?
             .iter()
             .map(|key_id|{
