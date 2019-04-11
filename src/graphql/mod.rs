@@ -1,13 +1,14 @@
 pub mod author;
 pub mod db;
-pub mod feed;
 pub mod input_objects;
 pub mod like;
 pub mod like_connection;
 pub mod mention;
 pub mod mention_connection;
 pub mod notification;
+pub mod page_info;
 pub mod post;
+pub mod post_connection;
 pub mod root;
 pub mod thread;
 pub mod thread_connection;

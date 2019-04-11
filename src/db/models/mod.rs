@@ -1,6 +1,8 @@
 pub mod abouts;
 pub mod authors;
 pub mod branches;
+pub mod blobs;
+pub mod blob_links;
 pub mod contacts;
 pub mod keys;
 pub mod links;
@@ -20,6 +22,7 @@ use branches::insert_branches;
 use contacts::insert_or_update_contacts;
 use keys::find_or_create_key;
 use links::insert_links;
+use blob_links::insert_blob_links;
 use mentions::insert_mentions;
 use messages::insert_message;
 use votes::insert_or_update_votes;
@@ -46,7 +49,7 @@ pub fn append_item(
             find_values_in_object_by_key(&message.value.content, "link", &mut links);
             insert_links(connection, links.as_slice(), message_key_id);
             insert_mentions(connection, links.as_slice(), message_key_id);
-            //insert_blob_links(connection, links.as_slice(), message_key_id);
+            insert_blob_links(connection, links.as_slice(), message_key_id);
         }
     }
 

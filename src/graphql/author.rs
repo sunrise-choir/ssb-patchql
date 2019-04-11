@@ -12,6 +12,19 @@ pub struct Author {
     pub author_id: i32,
 }
 
+#[derive(GraphQLEnum)]
+pub enum ContactState {
+    Follow,
+    Block,
+    Neutral,
+}
+
+#[derive(GraphQLObject)]
+pub struct PublicPrivateContactStatus{
+    pub public: ContactState,
+    pub private: Option<ContactState>,
+}
+
 graphql_object!(Author: Context |&self| {
     field name(&executor) -> FieldResult<Option<String>> {
         let connection = executor.context().connection.lock().unwrap();
@@ -37,5 +50,30 @@ graphql_object!(Author: Context |&self| {
             .filter(author_id_col.eq(self.author_id))
             .first::<String>(&(*connection))?;
         Ok(id)
+    }
+
+    field contact_status(&executor, other_author: String) -> FieldResult<PublicPrivateContactStatus> {
+        let status = PublicPrivateContactStatus{
+            public: ContactState::Neutral,
+            private: None
+        };
+        Ok(status)
+    }
+    // TODO: Think about how to do private follows / blocks. This could be exposed at the root
+    // query level?
+    field mutual_friends(&executor) -> FieldResult<Vec<Author>> {
+        Err("Unimplemented")?
+    }
+    field follows(&executor) -> FieldResult<Vec<Author>> {
+        Err("Unimplemented")?
+    }
+    field blocks(&executor) -> FieldResult<Vec<Author>> {
+        Err("Unimplemented")?
+    }
+    field followedBy(&executor) -> FieldResult<Vec<Author>> {
+        Err("Unimplemented")?
+    }
+    field blockedBy(&executor) -> FieldResult<Vec<Author>> {
+        Err("Unimplemented")?
     }
 });
