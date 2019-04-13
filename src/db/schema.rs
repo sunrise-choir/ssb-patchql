@@ -88,6 +88,24 @@ table! {
 }
 
 table! {
+    threads (flume_seq) {
+        flume_seq -> Nullable<BigInt>,
+        key_id -> Integer,
+        seq -> Integer,
+        received_time -> Double,
+        asserted_time -> Nullable<Double>,
+        root_key_id -> Nullable<Integer>,
+        fork_key_id -> Nullable<Integer>,
+        author_id -> Integer,
+        content_type -> Nullable<Text>,
+        content -> Nullable<Text>,
+        is_decrypted -> Bool,
+        reply_key_id -> Integer,
+        reply_author_id -> Integer,
+    }
+}
+
+table! {
     votes (id) {
         id -> Nullable<Integer>,
         link_from_author_id -> Integer,
@@ -97,5 +115,16 @@ table! {
 }
 
 allow_tables_to_appear_in_same_query!(
-    abouts, authors, blob_links, blobs, branches, contacts, keys, links, mentions, messages, votes,
+    abouts,
+    authors,
+    blob_links,
+    blobs,
+    branches,
+    contacts,
+    keys,
+    links,
+    mentions,
+    messages,
+    threads,
+    votes,
 );

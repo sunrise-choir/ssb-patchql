@@ -10,7 +10,7 @@ pub struct PostConnection {
 }
 
 graphql_object!(PostConnection: Context |&self| {
-    field posts(&executor) -> Vec<Post>{
+    field nodes(&executor) -> Vec<Post>{
 
         self.post_keys
             .iter()

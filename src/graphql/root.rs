@@ -15,10 +15,17 @@ use crate::db::schema::authors::dsl::{
 use crate::db::schema::keys::dsl::{id as keys_id_col, key as keys_key_col, keys as keys_table};
 use crate::db::Context;
 use crate::db::schema::messages::dsl::{
-    content_type as messages_content_type, flume_seq as messages_flume_seq,
-    fork_key_id as messages_fork_key_id, key_id as messages_key_id, messages as messages_table,
-    root_key_id as messages_root_key_id,
+    key_id as messages_key_id, messages as messages_table,
 };
+
+use crate::db::schema::threads::dsl::{
+    content_type as threads_content_type, flume_seq as threads_flume_seq,
+    fork_key_id as threads_fork_key_id, key_id as threads_key_id, threads as threads_table,
+    root_key_id as threads_root_key_id,
+    author_id as threads_author_id,
+    reply_author_id,
+};
+
 
 pub struct Query;
 
@@ -86,14 +93,39 @@ graphql_object!(Query: Context |&self| {
             },
         }?;
 
-        let results = messages_table
-            .select((messages_key_id, messages_flume_seq))
-            .order(messages_flume_seq.desc())
-            .filter(messages_flume_seq.lt(start_seq))
-            .filter(messages_root_key_id.is_null())
-            .filter(messages_fork_key_id.is_null())
-            .filter(messages_content_type.eq("post"))
+        let mut query = threads_table
+            .select((threads_key_id, threads_flume_seq))
+            .into_boxed();
+
+
+        if let Some(authors) = roots_authored_by {
+            let author_key_ids = authors_table
+                .select(authors_id)
+                .filter(authors_author.eq_any(authors))
+                .load::<Option<i32>>(&(*connection))?;
+
+                query = query
+                    .or_filter(threads_author_id.nullable().eq_any(author_key_ids));
+        }
+
+        if let Some(authors) = has_replies_authored_by {
+            let author_key_ids = authors_table
+                .select(authors_id)
+                .filter(authors_author.eq_any(authors))
+                .load::<Option<i32>>(&(*connection))?;
+
+                query = query
+                    .or_filter(reply_author_id.nullable().eq_any(author_key_ids));
+        }
+
+        let results = query
+            .filter(threads_flume_seq.lt(start_seq))
+            .filter(threads_root_key_id.is_null())
+            .filter(threads_fork_key_id.is_null())
+            .filter(threads_content_type.eq("post"))
+            .order(threads_flume_seq.desc())
             .limit(next as i64)
+            .distinct()
             .load::<(i32, Option<i64>)>(&(*connection))
             .unwrap();
 

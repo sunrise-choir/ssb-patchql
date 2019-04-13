@@ -1,14 +1,7 @@
 use super::post::Post;
 use super::thread::Thread;
 use super::page_info::PageInfo;
-use crate::db::schema::messages::dsl::{
-    content_type as messages_content_type, flume_seq as messages_flume_seq,
-    fork_key_id as messages_fork_key_id, key_id as messages_key_id, messages as messages_table,
-    root_key_id as messages_root_key_id,
-};
 use crate::db::Context;
-use bytes::{ByteOrder, LittleEndian};
-use diesel::prelude::*;
 
 
 #[derive(Default)]
@@ -19,8 +12,7 @@ pub struct ThreadConnection {
 }
 
 graphql_object!(ThreadConnection: Context |&self| {
-    field threads(&executor) -> Vec<Thread>{
-
+    field nodes(&executor) -> Vec<Thread>{
         self.thread_keys
             .iter()
             .map(|key_id|{
@@ -31,5 +23,9 @@ graphql_object!(ThreadConnection: Context |&self| {
 
     field page_info(&executor) -> &PageInfo{
         &self.page_info
+    }
+
+    field total_count(&executor) -> i32 {
+        0
     }
 });
