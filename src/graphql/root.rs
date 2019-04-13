@@ -162,7 +162,12 @@ graphql_object!(Query: Context |&self| {
             .map(|(key_id, _)| *key_id)
             .collect::<Vec<i32>>();
 
-        let last_seq = results.iter().last().map(|(_, seq)| *seq).unwrap().unwrap();
+        let last_seq: i64 = results
+            .iter()
+            .last()
+            .map(|(_, seq)| *seq)
+            .ok_or("No results found")?
+            .ok_or("No results found")?;
 
         let end_cursor = base64::encode(&(last_seq as u64).to_le_bytes());
         let has_next_page = last_seq != 0;
@@ -178,7 +183,6 @@ graphql_object!(Query: Context |&self| {
             thread_keys,
             page_info,
         })
-
     }
 
     /// Find a post by key string.
