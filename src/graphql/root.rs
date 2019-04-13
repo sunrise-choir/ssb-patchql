@@ -9,6 +9,13 @@ use super::post::*;
 use super::post_connection::*;
 use super::thread::*;
 use super::author::*;
+use crate::db::schema::contacts::dsl::{
+    author_id as contacts_author_id,
+    contact_author_id as contacts_contact_author_id,
+    state as contacts_state,
+    contacts as contacts_table
+};
+
 use crate::db::schema::authors::dsl::{
     author as authors_author, authors as authors_table, id as authors_id,
 };
@@ -54,7 +61,7 @@ graphql_object!(Query: Context |&self| {
     }
 
     /// Search for threads that match _any_ of the selectors.
-    /// Eg. if roots_authored_by: "..." and has_replies_authored_by: "..." are used, you will get threads
+    /// Eg. if `roots_authored_by` **and** `has_replies_authored_by` are used, you will get threads
     /// where _either_ is true. The selectors are logically OR'd, **not** AND'd.
     field threads(
         &executor,
@@ -106,6 +113,34 @@ graphql_object!(Query: Context |&self| {
 
                 query = query
                     .or_filter(threads_author_id.nullable().eq_any(author_key_ids));
+        }
+
+        if let Some(authors) = roots_authored_by_someone_followed_by {
+            let author_key_ids = authors_table
+                .inner_join(
+                    contacts_table.on(authors_id.eq(contacts_author_id.nullable()))
+                    )
+                .select(contacts_contact_author_id)
+                .filter(authors_author.eq_any(authors))
+                .filter(contacts_state.eq(1))
+                .load::<i32>(&(*connection))?;
+
+                query = query
+                    .or_filter(threads_author_id.nullable().eq_any(author_key_ids));
+        }
+
+        if let Some(authors) = has_replies_authored_by_someone_followed_by {
+            let author_key_ids = authors_table
+                .inner_join(
+                    contacts_table.on(authors_id.eq(contacts_author_id.nullable()))
+                    )
+                .select(contacts_contact_author_id)
+                .filter(authors_author.eq_any(authors))
+                .filter(contacts_state.eq(1))
+                .load::<i32>(&(*connection))?;
+
+                query = query
+                    .or_filter(reply_author_id.nullable().eq_any(author_key_ids));
         }
 
         if let Some(authors) = has_replies_authored_by {
