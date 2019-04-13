@@ -1,38 +1,31 @@
+use super::page_info::PageInfo;
+use bytes::{ByteOrder, LittleEndian};
 use diesel::prelude::*;
 use juniper::FieldResult;
-use bytes::{ByteOrder, LittleEndian};
-use super::page_info::PageInfo;
 
-use super::thread_connection::*;
+use super::author::*;
 use super::input_objects::*;
 use super::post::*;
 use super::post_connection::*;
 use super::thread::*;
-use super::author::*;
+use super::thread_connection::*;
 use crate::db::schema::contacts::dsl::{
-    author_id as contacts_author_id,
-    contact_author_id as contacts_contact_author_id,
-    state as contacts_state,
-    contacts as contacts_table
+    author_id as contacts_author_id, contact_author_id as contacts_contact_author_id,
+    contacts as contacts_table, state as contacts_state,
 };
 
 use crate::db::schema::authors::dsl::{
     author as authors_author, authors as authors_table, id as authors_id,
 };
 use crate::db::schema::keys::dsl::{id as keys_id_col, key as keys_key_col, keys as keys_table};
+use crate::db::schema::messages::dsl::{key_id as messages_key_id, messages as messages_table};
 use crate::db::Context;
-use crate::db::schema::messages::dsl::{
-    key_id as messages_key_id, messages as messages_table,
-};
 
 use crate::db::schema::threads::dsl::{
-    content_type as threads_content_type, flume_seq as threads_flume_seq,
-    fork_key_id as threads_fork_key_id, key_id as threads_key_id, threads as threads_table,
-    root_key_id as threads_root_key_id,
-    author_id as threads_author_id,
-    reply_author_id,
+    author_id as threads_author_id, content_type as threads_content_type,
+    flume_seq as threads_flume_seq, fork_key_id as threads_fork_key_id, key_id as threads_key_id,
+    reply_author_id, root_key_id as threads_root_key_id, threads as threads_table,
 };
-
 
 pub struct Query;
 

@@ -2,7 +2,7 @@ use crate::db::SqliteConnection;
 use crate::db::*;
 
 use super::blobs::find_or_create_blob;
-use crate::db::schema::blob_links::dsl::{link_from_key_id, link_to_blob_id, blob_links};
+use crate::db::schema::blob_links::dsl::{blob_links, link_from_key_id, link_to_blob_id};
 use diesel::insert_into;
 
 pub fn insert_blob_links(

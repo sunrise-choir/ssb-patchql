@@ -1,8 +1,7 @@
+use super::page_info::PageInfo;
 use super::post::Post;
 use super::thread::Thread;
-use super::page_info::PageInfo;
 use crate::db::Context;
-
 
 #[derive(Default)]
 pub struct ThreadConnection {

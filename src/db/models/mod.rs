@@ -1,8 +1,8 @@
 pub mod abouts;
 pub mod authors;
-pub mod branches;
-pub mod blobs;
 pub mod blob_links;
+pub mod blobs;
+pub mod branches;
 pub mod contacts;
 pub mod keys;
 pub mod links;
@@ -18,11 +18,11 @@ use private_box::SecretKey;
 use serde_json::Value;
 
 use abouts::insert_abouts;
+use blob_links::insert_blob_links;
 use branches::insert_branches;
 use contacts::insert_or_update_contacts;
 use keys::find_or_create_key;
 use links::insert_links;
-use blob_links::insert_blob_links;
 use mentions::insert_mentions;
 use messages::insert_message;
 use votes::insert_or_update_votes;

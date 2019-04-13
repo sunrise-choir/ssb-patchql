@@ -20,7 +20,7 @@ pub enum ContactState {
 }
 
 #[derive(GraphQLObject)]
-pub struct PublicPrivateContactStatus{
+pub struct PublicPrivateContactStatus {
     pub public: ContactState,
     pub private: Option<ContactState>,
 }

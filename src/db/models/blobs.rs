@@ -1,9 +1,7 @@
 use crate::db::schema::*;
 use crate::db::*;
 
-use crate::db::schema::blobs::dsl::{
-    blob as blobs_blob, blobs as blobs_table, id as blobs_id,
-};
+use crate::db::schema::blobs::dsl::{blob as blobs_blob, blobs as blobs_table, id as blobs_id};
 use diesel::insert_into;
 
 #[derive(Queryable, Insertable, Identifiable, Debug)]
