@@ -25,6 +25,7 @@ use crate::db::schema::threads::dsl::{
     author_id as threads_author_id, content_type as threads_content_type,
     flume_seq as threads_flume_seq, fork_key_id as threads_fork_key_id, key_id as threads_key_id,
     reply_author_id, root_key_id as threads_root_key_id, threads as threads_table,
+    is_decrypted as threads_is_decrypted,
 };
 
 pub struct Query;
@@ -82,6 +83,7 @@ graphql_object!(Query: Context |&self| {
         let connection = executor.context().connection.lock()?;
 
         //TODO: need to handle before and after cases
+        // I wonder if before / after should be a union type. You can't do both right?
         let start_seq = match after {
             None => Ok(std::i64::MAX),
             Some(ref encoded) => match base64::decode(&encoded) {
@@ -145,6 +147,18 @@ graphql_object!(Query: Context |&self| {
                 query = query
                     .or_filter(reply_author_id.nullable().eq_any(author_key_ids));
         }
+
+        query = match privacy {
+            Privacy::Private => {
+                query.filter(threads_is_decrypted.eq(true))
+            },
+            Privacy::Public => {
+                query.filter(threads_is_decrypted.eq(false))
+            },
+            Privacy::All => {
+                query
+            },
+        };
 
         let results = query
             .filter(threads_flume_seq.lt(start_seq))
