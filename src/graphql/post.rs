@@ -8,20 +8,15 @@ use juniper::FieldResult;
 use super::like_connection::*;
 use crate::db::models::keys::*;
 use crate::db::models::votes::*;
-use crate::db::schema::keys::dsl::{
-    keys as keys_table,
-    id as keys_id,
-    key as keys_key,
-};
+use crate::db::schema::keys::dsl::{id as keys_id, key as keys_key, keys as keys_table};
 use crate::db::schema::links::dsl::{
     link_from_key_id as links_link_from_key_id, link_to_key_id as links_link_to_key_col,
     links as links_table,
 };
 use crate::db::schema::messages::dsl::{
     author_id as messages_author_id, content as messages_content,
-    content_type as messages_content_type, fork_key_id, key_id as messages_key_id,
-    messages as messages_table, root_key_id,
-    fork_key_id as messages_fork_key_id,
+    content_type as messages_content_type, fork_key_id, fork_key_id as messages_fork_key_id,
+    key_id as messages_key_id, messages as messages_table, root_key_id,
     root_key_id as messages_root_key_id,
 };
 use crate::db::schema::votes::dsl::{

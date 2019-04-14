@@ -23,9 +23,8 @@ use crate::db::Context;
 
 use crate::db::schema::threads::dsl::{
     author_id as threads_author_id, content_type as threads_content_type,
-    flume_seq as threads_flume_seq, key_id as threads_key_id,
+    flume_seq as threads_flume_seq, is_decrypted as threads_is_decrypted, key_id as threads_key_id,
     reply_author_id, root_key_id as threads_root_key_id, threads as threads_table,
-    is_decrypted as threads_is_decrypted,
 };
 
 pub struct Query;
@@ -73,8 +72,11 @@ graphql_object!(Query: Context |&self| {
     /// where _either_ is true. The selectors are logically OR'd, **not** AND'd.
     field threads(
         &executor,
+        /// Use a cursor string to get results before the cursor
         before: Option<String>,
+        /// Use a cursor string to get results after the cursor
         after: Option<String>,
+        /// Limit the number or results to get.
         next = 10: i32,
         /// Find public, private or all threads.
         privacy = (Privacy::Public): Privacy,
@@ -163,7 +165,7 @@ graphql_object!(Query: Context |&self| {
         query = match (&before, &after) {
             (Some(b), None) => {
                 let start_cursor = decode_cursor(&b)?;
-            
+
                 query
                     .filter(threads_flume_seq.gt(start_cursor))
             },
@@ -177,7 +179,6 @@ graphql_object!(Query: Context |&self| {
             },
             (Some(_), Some(_)) => {
                 Err("Before and After can't be set at the same time.")?
-            
             }
         };
 
