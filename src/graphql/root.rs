@@ -197,8 +197,7 @@ graphql_object!(Query: Context |&self| {
             .order(threads_flume_seq.desc())
             .limit(next as i64)
             .distinct()
-            .load::<(i32, Option<i64>)>(&(*connection))
-            .unwrap();
+            .load::<(i32, Option<i64>)>(&(*connection))?;
 
         let thread_keys = results
             .iter()
@@ -294,10 +293,9 @@ graphql_object!(Query: Context |&self| {
 
         let results = boxed_query
             .filter(messages_content_type.eq("post"))
-            .order(messages_flume_seq.desc())
+            .order(messages_flume_seq.desc()) // Hmmm should we switch this off when we're using a query and rank by query matching value?
             .limit(next as i64)
-            .load::<(i32, Option<i64>)>(&(*connection))
-            .unwrap();
+            .load::<(i32, Option<i64>)>(&(*connection))?;
 
         let post_keys = results
             .iter()
