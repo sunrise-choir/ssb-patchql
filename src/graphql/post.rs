@@ -8,7 +8,11 @@ use juniper::FieldResult;
 use super::like_connection::*;
 use crate::db::models::keys::*;
 use crate::db::models::votes::*;
-use crate::db::schema::keys::dsl::keys as keys_table;
+use crate::db::schema::keys::dsl::{
+    keys as keys_table,
+    id as keys_id,
+    key as keys_key,
+};
 use crate::db::schema::links::dsl::{
     link_from_key_id as links_link_from_key_id, link_to_key_id as links_link_to_key_col,
     links as links_table,
@@ -17,6 +21,8 @@ use crate::db::schema::messages::dsl::{
     author_id as messages_author_id, content as messages_content,
     content_type as messages_content_type, fork_key_id, key_id as messages_key_id,
     messages as messages_table, root_key_id,
+    fork_key_id as messages_fork_key_id,
+    root_key_id as messages_root_key_id,
 };
 use crate::db::schema::votes::dsl::{
     link_to_key_id as votes_link_to_key_col, votes as votes_table,
@@ -95,6 +101,31 @@ graphql_object!(Post: Context |&self| {
 
         Ok(value.text)
     }
+    field forks_from_key(&executor) -> FieldResult<Option<String>> {
+        let connection = executor.context().connection.lock()?;
+        let fork_key = messages_table
+            .inner_join(keys_table.on(
+                    messages_fork_key_id.eq(keys_id)
+                    ))
+            .select(keys_key)
+            .filter(messages_key_id.eq(self.key_id))
+            .first::<String>(&(*connection))
+            .optional()?;
+        Ok(fork_key)
+    }
+    field root_key(&executor) -> FieldResult<Option<String>> {
+        let connection = executor.context().connection.lock()?;
+        let root_key = messages_table
+            .inner_join(keys_table.on(
+                    messages_root_key_id.nullable().eq(keys_id)
+                    ))
+            .select(keys_key)
+            .filter(messages_key_id.eq(self.key_id))
+            .first::<String>(&(*connection))
+            .optional()?;
+
+        Ok(root_key)
+    }
     field references(&executor) -> FieldResult<Vec<Post>> {
         let connection = executor.context().connection.lock()?;
 
@@ -146,7 +177,7 @@ graphql_object!(Post: Context |&self| {
             .filter(messages_content_type.ne("tag"))
             .filter(messages_content_type.ne("vote"))
             .filter(root_key_id.eq(self.key_id)) // A fork message will have its root set pointing to this message
-            .filter(fork_key_id.eq(this_root_key_id)) // A fork message will have its fork key pointing at the same root message as this one.
+            .filter(fork_key_id.eq(this_root_key_id)) // A fork message will have its fork key pointing at the same root message as this one's root.
             .load::<i32>(&(*connection))?
             .iter()
             .map(|key_id|{

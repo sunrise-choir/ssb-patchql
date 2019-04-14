@@ -23,12 +23,26 @@ use crate::db::Context;
 
 use crate::db::schema::threads::dsl::{
     author_id as threads_author_id, content_type as threads_content_type,
-    flume_seq as threads_flume_seq, fork_key_id as threads_fork_key_id, key_id as threads_key_id,
+    flume_seq as threads_flume_seq, key_id as threads_key_id,
     reply_author_id, root_key_id as threads_root_key_id, threads as threads_table,
     is_decrypted as threads_is_decrypted,
 };
 
 pub struct Query;
+
+fn decode_cursor(encoded: &str) -> Result<i64, String> {
+    match base64::decode(encoded) {
+        Ok(ref bytes) if bytes.len() < 8 => {
+            Err("Error decoding cursor. Is it a valid base64 encoded i64?".to_string())
+        }
+        Ok(bytes) => Ok(LittleEndian::read_i64(bytes.as_slice())),
+        Err(err) => Err(err.to_string()),
+    }
+}
+
+fn encode_cursor(cursor: i64) -> String {
+    base64::encode(&(cursor as u64).to_le_bytes())
+}
 
 graphql_object!(Query: Context |&self| {
 
@@ -82,23 +96,9 @@ graphql_object!(Query: Context |&self| {
         // Get the context from the executor.
         let connection = executor.context().connection.lock()?;
 
-        //TODO: need to handle before and after cases
-        // I wonder if before / after should be a union type. You can't do both right?
-        let start_seq = match after {
-            None => Ok(std::i64::MAX),
-            Some(ref encoded) => match base64::decode(&encoded) {
-                Ok(ref bytes) if bytes.len() < 8 => {
-                    Err("Error decoding cursor. Is it a valid base64 encoded i64?".to_string())
-                }
-                Ok(bytes) => Ok(LittleEndian::read_i64(bytes.as_slice())),
-                Err(err) => Err(err.to_string()),
-            },
-        }?;
-
         let mut query = threads_table
             .select((threads_key_id, threads_flume_seq))
             .into_boxed();
-
 
         if let Some(authors) = roots_authored_by {
             let author_key_ids = authors_table
@@ -160,10 +160,29 @@ graphql_object!(Query: Context |&self| {
             },
         };
 
+        query = match (&before, &after) {
+            (Some(b), None) => {
+                let start_cursor = decode_cursor(&b)?;
+            
+                query
+                    .filter(threads_flume_seq.gt(start_cursor))
+            },
+            (None, Some(a)) => {
+                let start_cursor = decode_cursor(&a)?;
+                query
+                    .filter(threads_flume_seq.lt(start_cursor))
+            },
+            (None, None) => {
+                query
+            },
+            (Some(_), Some(_)) => {
+                Err("Before and After can't be set at the same time.")?
+            
+            }
+        };
+
         let results = query
-            .filter(threads_flume_seq.lt(start_seq))
             .filter(threads_root_key_id.is_null())
-            .filter(threads_fork_key_id.is_null())
             .filter(threads_content_type.eq("post"))
             .order(threads_flume_seq.desc())
             .limit(next as i64)
@@ -176,6 +195,12 @@ graphql_object!(Query: Context |&self| {
             .map(|(key_id, _)| *key_id)
             .collect::<Vec<i32>>();
 
+        let first_seq: i64 = results
+            .first()
+            .map(|(_, seq)| *seq)
+            .ok_or("No results found")?
+            .ok_or("No results found")?;
+
         let last_seq: i64 = results
             .iter()
             .last()
@@ -183,12 +208,11 @@ graphql_object!(Query: Context |&self| {
             .ok_or("No results found")?
             .ok_or("No results found")?;
 
-        let end_cursor = base64::encode(&(last_seq as u64).to_le_bytes());
-        let has_next_page = last_seq != 0;
+        let has_next_page = last_seq != 0; //TODO this hard to tell if there is a next page.
 
         let page_info = PageInfo {
-            start_cursor: after,
-            end_cursor,
+            start_cursor: Some(encode_cursor(first_seq)),
+            end_cursor: encode_cursor(last_seq),
             has_next_page,
         };
 

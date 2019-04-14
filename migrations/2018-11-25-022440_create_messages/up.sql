@@ -33,4 +33,5 @@ CREATE VIEW IF NOT EXISTS threads AS
 
 CREATE INDEX IF NOT EXISTS messages_author_id_index ON messages(author_id);
 CREATE INDEX IF NOT EXISTS messages_content_type_index_flume_seq ON messages(content_type, flume_seq);
-CREATE INDEX IF NOT EXISTS messages_key_id_index ON messages(root_key_id);
+CREATE INDEX IF NOT EXISTS messages_root_key_id_index ON messages(root_key_id);
+CREATE INDEX IF NOT EXISTS messages_fork_key_id_index ON messages(fork_key_id);
