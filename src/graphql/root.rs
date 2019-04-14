@@ -1,11 +1,13 @@
 use super::page_info::PageInfo;
 use bytes::{ByteOrder, LittleEndian};
+use diesel::dsl::sql;
 use diesel::prelude::*;
 use juniper::FieldResult;
 
 use super::author::*;
 use super::input_objects::*;
 use super::post::*;
+use super::post_connection::*;
 use super::post_connection::*;
 use super::thread::*;
 use super::thread_connection::*;
@@ -18,7 +20,10 @@ use crate::db::schema::authors::dsl::{
     author as authors_author, authors as authors_table, id as authors_id,
 };
 use crate::db::schema::keys::dsl::{id as keys_id_col, key as keys_key_col, keys as keys_table};
-use crate::db::schema::messages::dsl::{key_id as messages_key_id, messages as messages_table};
+use crate::db::schema::messages::dsl::{
+    content_type as messages_content_type, flume_seq as messages_flume_seq,
+    key_id as messages_key_id, messages as messages_table,
+};
 use crate::db::Context;
 
 use crate::db::schema::threads::dsl::{
@@ -26,6 +31,8 @@ use crate::db::schema::threads::dsl::{
     flume_seq as threads_flume_seq, is_decrypted as threads_is_decrypted, key_id as threads_key_id,
     reply_author_id, root_key_id as threads_root_key_id, threads as threads_table,
 };
+
+use crate::db::schema::texts::dsl::{rowid as texts_key_id, texts as texts_table};
 
 pub struct Query;
 
@@ -45,7 +52,6 @@ fn encode_cursor(cursor: i64) -> String {
 
 graphql_object!(Query: Context |&self| {
 
-    //TODO Filtering by date ranges!
 
     /// Find a thread by the key string of the root message.
     field thread(&executor, root_id: String, order_by = (OrderBy::Received): OrderBy) -> FieldResult<Thread> {
@@ -95,6 +101,9 @@ graphql_object!(Query: Context |&self| {
         /// Order threads by asserted time, received time or causal ordering.
         order_by = (OrderBy::Received): OrderBy,
         ) -> FieldResult<ThreadConnection> {
+
+        //TODO Filtering by date ranges!
+
         // Get the context from the executor.
         let connection = executor.context().connection.lock()?;
 
@@ -245,6 +254,12 @@ graphql_object!(Query: Context |&self| {
     /// Search for posts that match certain filters.
     field posts(
         &executor,
+        /// Use a cursor string to get results before the cursor
+        before: Option<String>,
+        /// Use a cursor string to get results after the cursor
+        after: Option<String>,
+        /// Limit the number or results to get.
+        next = 10: i32,
         /// Find posts that match the query string.
         query: Option<String>,
         /// Find public, private or all threads.
@@ -261,7 +276,60 @@ graphql_object!(Query: Context |&self| {
         order_by = (OrderBy::Received): OrderBy,
     ) -> FieldResult<PostConnection> {
 
-        Err("Not implemented")?
+        let connection = executor.context().connection.lock()?;
+
+        let mut boxed_query = messages_table
+            .select((messages_key_id, messages_flume_seq))
+            .into_boxed();
+
+        if let Some(query_string) = query {
+            let matching_texts_keys = texts_table
+                .select(texts_key_id)
+                .filter(sql("text MATCH ").bind::<diesel::sql_types::Text, _>(query_string))
+                .load::<i32>(&(*connection))?;
+
+            boxed_query = boxed_query
+                .filter(messages_key_id.eq_any(matching_texts_keys));
+        }
+
+        let results = boxed_query
+            .filter(messages_content_type.eq("post"))
+            .order(messages_flume_seq.desc())
+            .limit(next as i64)
+            .load::<(i32, Option<i64>)>(&(*connection))
+            .unwrap();
+
+        let post_keys = results
+            .iter()
+            .map(|(key_id, _)| *key_id)
+            .collect::<Vec<i32>>();
+
+        let first_seq: i64 = results
+            .first()
+            .map(|(_, seq)| *seq)
+            .ok_or("No results found")?
+            .ok_or("No results found")?;
+
+        let last_seq: i64 = results
+            .iter()
+            .last()
+            .map(|(_, seq)| *seq)
+            .ok_or("No results found")?
+            .ok_or("No results found")?;
+
+        let has_next_page = last_seq != 0; //TODO this hard to tell if there is a next page.
+
+        let page_info = PageInfo {
+            start_cursor: Some(encode_cursor(first_seq)),
+            end_cursor: encode_cursor(last_seq),
+            has_next_page,
+        };
+
+        Ok(PostConnection{
+            next,
+            page_info,
+            post_keys
+        })
     }
 
     /// Find an author by their public key string.
