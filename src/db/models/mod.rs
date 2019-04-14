@@ -8,6 +8,7 @@ pub mod keys;
 pub mod links;
 pub mod mentions;
 pub mod messages;
+pub mod texts;
 pub mod votes;
 
 use crate::db::{Error, SqliteConnection};
@@ -25,6 +26,7 @@ use keys::find_or_create_key;
 use links::insert_links;
 use mentions::insert_mentions;
 use messages::insert_message;
+use texts::insert_texts;
 use votes::insert_or_update_votes;
 
 pub fn append_item(
@@ -63,6 +65,7 @@ pub fn append_item(
     )?;
     insert_or_update_contacts(connection, &message, message_key_id, is_decrypted);
     insert_abouts(connection, &message, message_key_id);
+    insert_texts(connection, &message, message_key_id);
 
     Ok(())
 }

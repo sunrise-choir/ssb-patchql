@@ -114,7 +114,14 @@ table! {
     }
 }
 
+table! {
+    texts (rowid) {
+        rowid -> Integer,
+        text -> Text,
+    }
+}
+
 allow_tables_to_appear_in_same_query!(
     abouts, authors, blob_links, blobs, branches, contacts, keys, links, mentions, messages,
-    threads, votes,
+    threads, votes, texts,
 );
