@@ -366,7 +366,15 @@ graphql_object!(Query: Context |&self| {
 
     /// Find an author by their public key string.
     field author(&executor, id: String) -> FieldResult<Author>{
-        Err("Not implemented")?
+        let connection = executor.context().connection.lock()?;
+
+        let author_key_id = authors_table
+            .select(authors_id)
+            .filter(authors_author.eq(id))
+            .first::<Option<i32>>(&(*connection))?
+            .ok_or("No author found")?;
+
+        Ok(Author{author_id: author_key_id})
     }
 
     /// Search for an author by a query string. Will search names and optionally descriptions too.
