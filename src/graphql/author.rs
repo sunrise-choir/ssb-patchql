@@ -1,3 +1,4 @@
+use crate::db::models::abouts::{get_author_abouts, AboutDescription, AboutImage, AboutName};
 use crate::db::schema::authors::dsl::{
     author as authors_author, authors as authors_table, id as authors_id,
 };
@@ -5,7 +6,6 @@ use crate::db::schema::contacts::dsl::{
     author_id as contacts_author_id, contact_author_id as contacts_contact_author_id,
     contacts as contacts_table, state as contacts_state,
 };
-use crate::db::models::abouts::{get_author_abouts, AboutDescription, AboutImage, AboutName};
 use crate::db::Context;
 use diesel::prelude::*;
 use juniper::FieldResult;
@@ -33,7 +33,6 @@ graphql_object!(Author: Context |&self| {
         let connection = executor.context().connection.lock().unwrap();
         let name = get_author_abouts::<AboutName>(&(*connection), self.author_id)?;
         Ok(name)
-
     }
     field description(&executor) -> FieldResult<Option<String>> {
         let connection = executor.context().connection.lock().unwrap();
@@ -53,19 +52,87 @@ graphql_object!(Author: Context |&self| {
             .first::<String>(&(*connection))?;
         Ok(id)
     }
+    field contact_status_to(&executor, other_author: String) -> FieldResult<PublicPrivateContactStatus> {
 
-    field contact_status(&executor, other_author: String) -> FieldResult<PublicPrivateContactStatus> {
-        let status = PublicPrivateContactStatus{
-            public: ContactState::Neutral,
-            private: None
+        let connection = executor.context().connection.lock().unwrap();
+
+        let other_author_id = authors_table
+            .select(authors_id)
+            .filter(authors_author.eq(other_author))
+            .first::<Option<i32>>(&(*connection))?;
+
+        let state = contacts_table
+            .select(contacts_state)
+            .filter(contacts_author_id.eq(self.author_id))
+            .filter(contacts_contact_author_id.nullable().eq(other_author_id))
+            .first::<Option<i32>>(&(*connection))
+            .optional()?;
+
+        let status = match state {
+            Some(Some(1)) => {
+                PublicPrivateContactStatus{
+                    public: ContactState::Follow,
+                    private: None
+                }
+            },
+            Some(Some(-1)) => {
+                PublicPrivateContactStatus{
+                    public: ContactState::Block,
+                    private: None
+                }
+            },
+            _ => {
+                PublicPrivateContactStatus{
+                    public: ContactState::Neutral,
+                    private: None
+                }
+            }
         };
+
+        Ok(status)
+    }
+    field contact_status_from(&executor, other_author: String) -> FieldResult<PublicPrivateContactStatus> {
+
+        let connection = executor.context().connection.lock().unwrap();
+
+        let other_author_id = authors_table
+            .select(authors_id)
+            .filter(authors_author.eq(other_author))
+            .first::<Option<i32>>(&(*connection))?;
+
+        let state = contacts_table
+            .select(contacts_state)
+            .filter(contacts_contact_author_id.eq(self.author_id))
+            .filter(contacts_author_id.nullable().eq(other_author_id))
+            .first::<Option<i32>>(&(*connection))
+            .optional()?;
+
+        let status = match state {
+            Some(Some(1)) => {
+                PublicPrivateContactStatus{
+                    public: ContactState::Follow,
+                    private: None
+                }
+            },
+            Some(Some(-1)) => {
+                PublicPrivateContactStatus{
+                    public: ContactState::Block,
+                    private: None
+                }
+            },
+            _ => {
+                PublicPrivateContactStatus{
+                    public: ContactState::Neutral,
+                    private: None
+                }
+            }
+        };
+
         Ok(status)
     }
     // TODO: Think about how to do private follows / blocks. This could be exposed at the root
     // query level?
-    field friends(&executor) -> FieldResult<Vec<Author>> {
-        Err("Unimplemented")?
-    }
+
     field follows(&executor) -> FieldResult<Vec<Author>> {
         let connection = executor.context().connection.lock().unwrap();
 
@@ -105,9 +172,42 @@ graphql_object!(Author: Context |&self| {
         Ok(authors)
     }
     field followedBy(&executor) -> FieldResult<Vec<Author>> {
-        Err("Unimplemented")?
+        let connection = executor.context().connection.lock().unwrap();
+
+        let authors = authors_table
+            .inner_join(
+                contacts_table.on(authors_id.eq(contacts_contact_author_id.nullable()))
+                )
+            .select(contacts_author_id)
+            .filter(authors_id.eq(self.author_id))
+            .filter(contacts_state.eq(1))
+            .load::<i32>(&(*connection))?
+            .into_iter()
+            .map(|author_id|{
+                Author{author_id}
+            })
+            .collect();
+
+        Ok(authors)
     }
     field blockedBy(&executor) -> FieldResult<Vec<Author>> {
-        Err("Unimplemented")?
+
+        let connection = executor.context().connection.lock().unwrap();
+
+        let authors = authors_table
+            .inner_join(
+                contacts_table.on(authors_id.eq(contacts_contact_author_id.nullable()))
+                )
+            .select(contacts_author_id)
+            .filter(authors_id.eq(self.author_id))
+            .filter(contacts_state.eq(-1))
+            .load::<i32>(&(*connection))?
+            .into_iter()
+            .map(|author_id|{
+                Author{author_id}
+            })
+            .collect();
+
+        Ok(authors)
     }
 });
