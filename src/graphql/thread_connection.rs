@@ -25,6 +25,6 @@ graphql_object!(ThreadConnection: Context |&self| {
     }
 
     field total_count(&executor) -> i32 {
-        0
+        self.thread_keys.len() as i32
     }
 });

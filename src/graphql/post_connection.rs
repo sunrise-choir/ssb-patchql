@@ -10,6 +10,9 @@ pub struct PostConnection {
 }
 
 graphql_object!(PostConnection: Context |&self| {
+    field total_count(&executor) -> i32 {
+        self.post_keys.len() as i32
+    }
     field nodes(&executor) -> Vec<Post>{
 
         self.post_keys

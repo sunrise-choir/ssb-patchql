@@ -8,7 +8,6 @@ use super::author::*;
 use super::input_objects::*;
 use super::post::*;
 use super::post_connection::*;
-use super::post_connection::*;
 use super::thread::*;
 use super::thread_connection::*;
 use crate::db::schema::contacts::dsl::{
@@ -20,8 +19,13 @@ use crate::db::schema::authors::dsl::{
     author as authors_author, authors as authors_table, id as authors_id,
 };
 use crate::db::schema::keys::dsl::{id as keys_id_col, key as keys_key_col, keys as keys_table};
+use crate::db::schema::mentions::dsl::{
+    link_from_key_id as mentions_link_from_key_id, link_to_author_id as mentions_link_to_author_id,
+    mentions as mentions_table,
+};
 use crate::db::schema::messages::dsl::{
-    content_type as messages_content_type, flume_seq as messages_flume_seq,
+    author_id as messages_author_id, content_type as messages_content_type,
+    flume_seq as messages_flume_seq, is_decrypted as messages_is_decrypted,
     key_id as messages_key_id, messages as messages_table,
 };
 use crate::db::Context;
@@ -96,8 +100,6 @@ graphql_object!(Query: Context |&self| {
         has_replies_authored_by_someone_followed_by: Option<Vec<String>>,
         /// Include threads that mention the provided authors.
         mentions_authors: Option<Vec<String>>,
-        /// Include threads that mention the provided channels.
-        mentions_channels: Option<Vec<String>>,
         /// Order threads by asserted time, received time or causal ordering.
         order_by = (OrderBy::Received): OrderBy,
         ) -> FieldResult<ThreadConnection> {
@@ -251,6 +253,8 @@ graphql_object!(Query: Context |&self| {
     }
 
     /// Search for posts that match certain filters.
+    /// Note that filters for posts are **ANDED** together. Posts meet all the conditions of the
+    /// filters to be included in the results.
     field posts(
         &executor,
         /// Use a cursor string to get results before the cursor
@@ -264,22 +268,30 @@ graphql_object!(Query: Context |&self| {
         /// Find public, private or all threads.
         privacy = (Privacy::Public): Privacy,
         /// Find posts that are authored by the provided authors.
-        authored_by: Option<String>,
-        /// Find posts that are referenced by the provided authors.
-        referenced_by_authors: Option<String>,
+        authors: Option<Vec<String>>,
         /// Find posts that mention the provided authors.
         mentions_authors: Option<Vec<String>>,
         /// Find posts that mention the provided channels.
-        mentions_channels: Option<Vec<String>>,
-        /// Order posts by asserted time, received time. Causal ordering not supported.
         order_by = (OrderBy::Received): OrderBy,
     ) -> FieldResult<PostConnection> {
 
+        //TODO: Date range
         let connection = executor.context().connection.lock()?;
 
         let mut boxed_query = messages_table
+            .inner_join(mentions_table.on(mentions_link_from_key_id.eq(messages_key_id)))
             .select((messages_key_id, messages_flume_seq))
             .into_boxed();
+
+        if let Some(mentions_authors) = mentions_authors {
+            let author_key_ids = authors_table
+                .select(authors_id)
+                .filter(authors_author.eq_any(mentions_authors))
+                .load::<Option<i32>>(&(*connection))?;
+
+            boxed_query = boxed_query
+                .filter(mentions_link_to_author_id.nullable().eq_any(author_key_ids));
+        }
 
         if let Some(query_string) = query {
             let matching_texts_keys = texts_table
@@ -291,9 +303,31 @@ graphql_object!(Query: Context |&self| {
                 .filter(messages_key_id.eq_any(matching_texts_keys));
         }
 
+        boxed_query = match privacy {
+            Privacy::Private => {
+                boxed_query.filter(messages_is_decrypted.eq(true))
+            },
+            Privacy::Public => {
+                boxed_query.filter(messages_is_decrypted.eq(false))
+            },
+            Privacy::All => {
+                boxed_query
+            },
+        };
+
+        if let Some(authors) = authors {
+            let author_key_ids = authors_table
+                .select(authors_id)
+                .filter(authors_author.eq_any(authors))
+                .load::<Option<i32>>(&(*connection))?;
+
+                boxed_query = boxed_query
+                    .filter(messages_author_id.nullable().eq_any(author_key_ids));
+        }
+
         let results = boxed_query
             .filter(messages_content_type.eq("post"))
-            .order(messages_flume_seq.desc()) // Hmmm should we switch this off when we're using a query and rank by query matching value?
+            .order(messages_flume_seq.desc()) // Hmmm should we switch this off when we're using a query and order by query ranking value?
             .limit(next as i64)
             .load::<(i32, Option<i64>)>(&(*connection))?;
 
