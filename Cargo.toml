@@ -11,7 +11,7 @@ diesel = { version = "1.4.1", features = ["sqlite", "r2d2"] }
 diesel_migrations = "1.4.0"
 dotenv = "0.9.0"
 env_logger = "0.6.1"
-flumedb = { git = "https://github.com/sunrise-choir/flumedb-rs"}
+flumedb = { git = "https://github.com/sunrise-choir/flumedb-rs", rev = "997593e" }
 itertools = "0.8.0"
 iron = "0.6.0"
 iron-cors = "0.8.0"
