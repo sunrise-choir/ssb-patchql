@@ -1,5 +1,4 @@
 use crate::db::*;
-use flumedb::offset_log::{LogEntry, OffsetLogIter};
 use flumedb::BidirIterator;
 use itertools::Itertools;
 use juniper::FieldResult;
@@ -17,17 +16,6 @@ pub struct DbMutation {}
 struct ProcessResults {
     chunk_size: i32,
     latest_sequence: Option<f64>,
-}
-
-struct LogIter<T> {
-    log_iter: OffsetLogIter<T>,
-}
-impl<T> Iterator for LogIter<T> {
-    type Item = LogEntry;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.log_iter.next()
-    }
 }
 
 graphql_object!(DbMutation: Context |&self| {
@@ -62,9 +50,9 @@ graphql_object!(DbMutation: Context |&self| {
         };
 
         let starting_offset = max_seq.unwrap_or(0);
-        let log_iter = LogIter{log_iter: log.iter_at_offset(starting_offset)};
 
-        log_iter
+        log.iter_at_offset(starting_offset)
+            .forward()
             .skip(num_to_skip)
             .take(chunk_size as usize)
             .chunks(10000)
