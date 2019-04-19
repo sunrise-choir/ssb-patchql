@@ -3,7 +3,6 @@ use crate::db::{Error, SqliteConnection};
 use crate::lib::SsbMessage;
 use serde_json::Value;
 
-use super::authors::find_or_create_author;
 use super::keys::find_or_create_key;
 use crate::db::schema::messages;
 use crate::db::schema::messages::dsl::messages as messages_table;
@@ -34,6 +33,7 @@ pub fn insert_message(
     seq: i64,
     message_key_id: i32,
     is_decrypted: bool,
+    author_id: i32,
 ) -> Result<usize, Error> {
     let root_key_id = match message.value.content["root"] {
         Value::String(ref key) => {
@@ -50,8 +50,6 @@ pub fn insert_message(
         }
         _ => None,
     };
-
-    let author_id = find_or_create_author(&connection, &message.value.author)?;
 
     let message = Message {
         flume_seq: Some(seq),

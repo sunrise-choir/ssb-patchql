@@ -8,6 +8,7 @@ pub mod keys;
 pub mod links;
 pub mod mentions;
 pub mod messages;
+pub mod posts;
 pub mod texts;
 pub mod votes;
 
@@ -26,8 +27,11 @@ use keys::find_or_create_key;
 use links::insert_links;
 use mentions::insert_mentions;
 use messages::insert_message;
+use posts::insert_post;
 use texts::insert_texts;
 use votes::insert_or_update_votes;
+
+use authors::find_or_create_author;
 
 pub fn append_item(
     connection: &SqliteConnection,
@@ -40,6 +44,7 @@ pub fn append_item(
     let (is_decrypted, message) = attempt_decryption(message, secret_keys);
 
     let message_key_id = find_or_create_key(&connection, &message.key).unwrap();
+    let author_id = find_or_create_author(&connection, &message.value.author)?;
 
     // votes are a kind of backlink, but we want to put them in their own table.
     match &message.value.content["type"] {
@@ -55,6 +60,13 @@ pub fn append_item(
         }
     }
 
+    match &message.value.content["type"] {
+        Value::String(type_string) if type_string == "post" => {
+            insert_post(connection, &message, message_key_id, author_id, seq as i64)?;
+        }
+        _ => {}
+    }
+
     insert_branches(connection, &message, message_key_id);
     insert_message(
         connection,
@@ -62,6 +74,7 @@ pub fn append_item(
         seq as i64,
         message_key_id,
         is_decrypted,
+        author_id,
     )?;
     insert_or_update_contacts(connection, &message, message_key_id, is_decrypted);
     insert_abouts(connection, &message, message_key_id);

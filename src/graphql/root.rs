@@ -28,13 +28,16 @@ use crate::db::schema::messages::dsl::{
     flume_seq as messages_flume_seq, is_decrypted as messages_is_decrypted,
     key_id as messages_key_id, messages as messages_table,
 };
-use crate::db::Context;
-
-use crate::db::schema::threads::dsl::{
-    author_id as threads_author_id, content_type as threads_content_type,
-    flume_seq as threads_flume_seq, is_decrypted as threads_is_decrypted, key_id as threads_key_id,
-    reply_author_id, root_key_id as threads_root_key_id, threads as threads_table,
+use crate::db::schema::reply_posts::dsl::{
+    author_id as reply_posts_author_id, flume_seq as reply_posts_flume_seq,
+    key_id as reply_posts_key_id, reply_posts as reply_posts_table,
+    root_post_id as reply_posts_root_post_id,
 };
+use crate::db::schema::root_posts::dsl::{
+    author_id as root_posts_author_id, flume_seq as root_posts_flume_seq,
+    key_id as root_posts_key_id, root_posts as root_posts_table,
+};
+use crate::db::Context;
 
 use crate::db::schema::texts::dsl::{rowid as texts_key_id, texts as texts_table};
 
@@ -109,8 +112,9 @@ graphql_object!(Query: Context |&self| {
         // Get the context from the executor.
         let connection = executor.context().connection.lock()?;
 
-        let mut query = threads_table
-            .select((threads_key_id, threads_flume_seq))
+        let mut query = root_posts_table
+            .inner_join(messages_table.on(root_posts_key_id.eq(messages_key_id)))
+            .select((root_posts_key_id, root_posts_flume_seq))
             .into_boxed();
 
         if let Some(authors) = roots_authored_by {
@@ -120,7 +124,7 @@ graphql_object!(Query: Context |&self| {
                 .load::<Option<i32>>(&(*connection))?;
 
                 query = query
-                    .or_filter(threads_author_id.nullable().eq_any(author_key_ids));
+                    .or_filter(root_posts_author_id.nullable().eq_any(author_key_ids));
         }
 
         if let Some(authors) = roots_authored_by_someone_followed_by {
@@ -134,7 +138,7 @@ graphql_object!(Query: Context |&self| {
                 .load::<i32>(&(*connection))?;
 
                 query = query
-                    .or_filter(threads_author_id.nullable().eq_any(author_key_ids));
+                    .or_filter(root_posts_author_id.nullable().eq_any(author_key_ids));
         }
 
         if let Some(authors) = has_replies_authored_by_someone_followed_by {
@@ -147,8 +151,12 @@ graphql_object!(Query: Context |&self| {
                 .filter(contacts_state.eq(1))
                 .load::<i32>(&(*connection))?;
 
+            let sub_query = reply_posts_table
+                .select(reply_posts_root_post_id)
+                .filter(reply_posts_author_id.nullable().eq_any(author_key_ids));
+
                 query = query
-                    .or_filter(reply_author_id.nullable().eq_any(author_key_ids));
+                    .or_filter(root_posts_key_id.eq_any(sub_query));
         }
 
         if let Some(authors) = has_replies_authored_by {
@@ -157,16 +165,20 @@ graphql_object!(Query: Context |&self| {
                 .filter(authors_author.eq_any(authors))
                 .load::<Option<i32>>(&(*connection))?;
 
-                query = query
-                    .or_filter(reply_author_id.nullable().eq_any(author_key_ids));
+            let sub_query = reply_posts_table
+                .select(reply_posts_root_post_id)
+                .filter(reply_posts_author_id.nullable().eq_any(author_key_ids));
+
+            query = query
+                .or_filter(root_posts_key_id.eq_any(sub_query));
         }
 
         query = match privacy {
             Privacy::Private => {
-                query.filter(threads_is_decrypted.eq(true))
+                query.filter(messages_is_decrypted.eq(true))
             },
             Privacy::Public => {
-                query.filter(threads_is_decrypted.eq(false))
+                query.filter(messages_is_decrypted.eq(false))
             },
             Privacy::All => {
                 query
@@ -178,12 +190,12 @@ graphql_object!(Query: Context |&self| {
                 let start_cursor = decode_cursor(&b)?;
 
                 query
-                    .filter(threads_flume_seq.gt(start_cursor))
+                    .filter(root_posts_flume_seq.gt(start_cursor))
             },
             (None, Some(a)) => {
                 let start_cursor = decode_cursor(&a)?;
                 query
-                    .filter(threads_flume_seq.lt(start_cursor))
+                    .filter(root_posts_flume_seq.lt(start_cursor))
             },
             (None, None) => {
                 query
@@ -193,13 +205,14 @@ graphql_object!(Query: Context |&self| {
             }
         };
 
-        let results = query
-            .filter(threads_root_key_id.is_null())
-            .filter(threads_content_type.eq("post"))
-            .order(threads_flume_seq.desc())
+        let query = query
+            .order(root_posts_flume_seq.desc())
             .limit(next as i64)
-            .distinct()
-            .load::<(i32, Option<i64>)>(&(*connection))?;
+            .distinct();
+
+
+        let results = query
+            .load::<(i32, i64)>(&(*connection))?;
 
         let thread_keys = results
             .iter()
@@ -209,14 +222,12 @@ graphql_object!(Query: Context |&self| {
         let first_seq: i64 = results
             .first()
             .map(|(_, seq)| *seq)
-            .ok_or("No results found")?
             .ok_or("No results found")?;
 
         let last_seq: i64 = results
             .iter()
             .last()
             .map(|(_, seq)| *seq)
-            .ok_or("No results found")?
             .ok_or("No results found")?;
 
         let has_next_page = last_seq != 0; //TODO this hard to tell if there is a next page.

@@ -136,9 +136,9 @@ graphql_object!(Author: Context |&self| {
     field follows(&executor) -> FieldResult<Vec<Author>> {
         let connection = executor.context().connection.lock().unwrap();
 
-        let authors = authors_table
+        let authors = contacts_table
             .inner_join(
-                contacts_table.on(authors_id.eq(contacts_author_id.nullable()))
+                authors_table.on(authors_id.eq(contacts_author_id.nullable()))
                 )
             .select(contacts_contact_author_id)
             .filter(authors_id.eq(self.author_id))

@@ -39,6 +39,23 @@ table! {
 }
 
 table! {
+    root_posts (flume_seq) {
+        flume_seq -> BigInt,
+        key_id -> Integer,
+        author_id -> Integer,
+    }
+}
+
+table! {
+    reply_posts (flume_seq) {
+        flume_seq -> BigInt,
+        key_id -> Integer,
+        root_post_id -> Integer,
+        author_id -> Integer,
+    }
+}
+
+table! {
     contacts (id) {
         id -> Nullable<Integer>,
         author_id -> Integer,
@@ -122,6 +139,19 @@ table! {
 }
 
 allow_tables_to_appear_in_same_query!(
-    abouts, authors, blob_links, blobs, branches, contacts, keys, links, mentions, messages,
-    threads, votes, texts,
+    abouts,
+    authors,
+    blob_links,
+    blobs,
+    branches,
+    contacts,
+    keys,
+    links,
+    mentions,
+    messages,
+    threads,
+    votes,
+    texts,
+    reply_posts,
+    root_posts
 );
