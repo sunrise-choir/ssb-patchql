@@ -101,7 +101,7 @@ fn attempt_decryption(mut message: SsbMessage, secret_keys: &[SecretKey]) -> (bo
                 .map(|data| {
                     is_decrypted = true;
                     serde_json::from_slice(&data)
-                        .unwrap_or(Value::Null)
+                        .unwrap_or(Value::Null) // Whatever was decrypted wasn't json.
                 })
                 .unwrap_or(Value::Null); //If we can't decrypt it, throw it away.
 
