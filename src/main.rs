@@ -44,10 +44,19 @@ fn main() {
     let offset_log_path =
         env::var("OFFSET_LOG_PATH").expect("OFFSET_LOG_PATH environment variable must be set");
 
-    let connection = open_connection();
-    let locked_connection_ref = Arc::new(Mutex::new(connection));
-    let offset_log = OffsetLog::new(offset_log_path).unwrap();
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+
+    let offset_log = match OffsetLog::open_read_only(&offset_log_path) {
+        Ok(log) => log,
+        Err(_) => {
+            eprintln!("Failed to open offset log file at path: {}", &offset_log_path);
+            return;
+        }
+    };
     let locked_log_ref = Arc::new(Mutex::new(offset_log));
+
+    let connection = open_connection(&database_url);
+    let locked_connection_ref = Arc::new(Mutex::new(connection));
 
     let mut mount = Mount::new();
 

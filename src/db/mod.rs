@@ -4,7 +4,6 @@ use diesel::result::Error;
 use diesel::sqlite::SqliteConnection;
 use diesel_migrations::any_pending_migrations;
 use flumedb::offset_log::OffsetLog;
-use std::env;
 use std::sync::{Arc, Mutex};
 
 pub mod models;
@@ -29,8 +28,7 @@ pub fn execute_pragmas(connection: &SqliteConnection) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn open_connection() -> SqliteConnection {
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+pub fn open_connection(database_url: &str) -> SqliteConnection {
 
     let connection = SqliteConnection::establish(&database_url)
         .expect(&format!("Error connecting to {}", database_url));
@@ -42,7 +40,7 @@ pub fn open_connection() -> SqliteConnection {
 
     if let Ok(true) = any_pending_migrations(&connection) {
         info!("sqlite db has pending migrations. Deleting db and it will be rebuilt.");
-        std::fs::remove_file(database_url).unwrap();
+        std::fs::remove_file(&database_url).unwrap();
         embedded_migrations::run(&connection).unwrap();
     }
 
