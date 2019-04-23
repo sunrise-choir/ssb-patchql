@@ -21,16 +21,11 @@ struct ProcessResults {
 graphql_object!(DbMutation: Context |&self| {
     field process(&executor, chunk_size = 100: i32) -> FieldResult<ProcessResults> {
         //TODO: get the secret key from env
-        let secret_key_bytes = &vec![0];
-        let secret_key = SecretKey::from_slice(secret_key_bytes).unwrap_or_else(|| {
-            let empty_slice = vec![
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0,
-            ];
-            SecretKey::from_slice(&empty_slice[0..32]).unwrap()
+        let secret_key_bytes = [0u8];
+        let secret_key = SecretKey::from_slice(&secret_key_bytes).unwrap_or_else(|| {
+            SecretKey::from_slice(&[0; 64]).unwrap()
         });
-        let keys = vec![secret_key];
-
+        let keys = [secret_key];
 
         let context = executor.context();
         let connection = context.connection.lock()?;
