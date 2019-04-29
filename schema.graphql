@@ -1,0 +1,224 @@
+# source: http://localhost:8080/graphql
+# timestamp: Mon Apr 29 2019 18:07:40 GMT+1200 (NZST)
+
+schema {
+  query: Query
+  mutation: DbMutation
+}
+
+type Author {
+  name: String
+  description: String
+  imageLink: String
+  id: String!
+  contactStatusTo(otherAuthor: String!): PublicPrivateContactStatus!
+  contactStatusFrom(otherAuthor: String!): PublicPrivateContactStatus!
+  follows: [Author!]!
+  blocks: [Author!]!
+  followedBy: [Author!]!
+  blockedBy: [Author!]!
+}
+
+enum ContactState {
+  FOLLOW
+  BLOCK
+  NEUTRAL
+}
+
+type DbMutation {
+  process(chunkSize: Int = 100): ProcessResults!
+}
+
+type Like {
+  author: Author!
+  value: Int!
+}
+
+type LikeConnection {
+  count: Int!
+}
+
+"""
+Retrieve objects ordered by asserted publish time, by received time, or attempt to causally sort by cypher links.
+"""
+enum OrderBy {
+  """
+  Order by asserted timestamp (the time the author claimed they published the message).
+  Note that using asserted timestamp is not reliable. If the publisher of a
+  message has their system clock set incorrectly then this can really break your
+  ui. This has already happened before on the network. If you're sorting posts
+  in a thread, prefer using causal sort.
+  """
+  ASSERTED
+
+  """
+  Order by received timestamp (the time that the message was inserted into your db).
+  Note that using received timestamp does not work well when the db has
+  downloaded many feeds all at once (like during onboarding to the network)
+  because feeds are inserted into your db in a random order.
+  """
+  RECEIVED
+
+  """
+  Order by causal timestamp.
+  Use this for sorting posts in a thread. Don't use this for sorting all threads in the database, it's not supported.
+  """
+  CAUSAL
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  endCursor: String!
+  startCursor: String
+}
+
+type Post {
+  id: String!
+  author: Author!
+  likes: [Like!]!
+  likesConnection: LikeConnection!
+  text: String!
+  forksFromKey: String
+  rootKey: String
+  references: [Post!]!
+  forks: [Post!]!
+}
+
+type PostConnection {
+  totalCount: Int!
+  nodes: [Post!]!
+  pageInfo: PageInfo!
+}
+
+"""Retrieve objects that are private, public, or both."""
+enum Privacy {
+  """Only private."""
+  PRIVATE
+
+  """Only public."""
+  PUBLIC
+
+  """Both public and private."""
+  ALL
+}
+
+type ProcessResults {
+  chunkSize: Int!
+  latestSequence: Float
+}
+
+type PublicPrivateContactStatus {
+  public: ContactState!
+  private: ContactState
+}
+
+type Query {
+  """Find a thread by the key string of the root message."""
+  thread(rootId: String!, orderBy: OrderBy): Thread!
+
+  """
+  Search for threads that match _any_ of the selectors.
+  Eg. if `roots_authored_by` **and** `has_replies_authored_by` are used, you will get threads
+  where _either_ is true. The selectors are logically OR'd, **not** AND'd.
+  """
+  threads(
+    """Use a cursor string to get results before the cursor"""
+    before: String
+
+    """Use a cursor string to get results after the cursor"""
+    after: String
+
+    """Limit the number or results to get."""
+    next: Int = 10
+
+    """Find public, private or all threads."""
+    privacy: Privacy
+
+    """
+    Include threads whose root message is authored by one of the provided authors
+    """
+    rootsAuthoredBy: [String!]
+
+    """
+    Include threads whose root message is authored by someone followed by one of the provided authors
+    """
+    rootsAuthoredBySomeoneFollowedBy: [String!]
+
+    """Include threads that have replies by one of the provided authors."""
+    hasRepliesAuthoredBy: [String!]
+
+    """
+    Include threads that have replies by someone followed by one of the provided authors.
+    """
+    hasRepliesAuthoredBySomeoneFollowedBy: [String!]
+
+    """Include threads that mention the provided authors."""
+    mentionsAuthors: [String!]
+
+    """Order threads by asserted time, received time or causal ordering."""
+    orderBy: OrderBy
+  ): ThreadConnection!
+
+  """Find a post by key string."""
+  post(id: String!): Post!
+
+  """
+  Search for posts that match certain filters.
+  Note that filters for posts are **ANDED** together. Posts meet all the conditions of the
+  filters to be included in the results.
+  """
+  posts(
+    """Use a cursor string to get results before the cursor"""
+    before: String
+
+    """Use a cursor string to get results after the cursor"""
+    after: String
+
+    """Limit the number or results to get."""
+    next: Int = 10
+
+    """Find posts that match the query string."""
+    query: String
+
+    """Find public, private or all threads."""
+    privacy: Privacy
+
+    """Find posts that are authored by the provided authors."""
+    authors: [String!]
+
+    """Find posts that mention the provided authors."""
+    mentionsAuthors: [String!]
+
+    """Find posts that mention the provided channels."""
+    orderBy: OrderBy
+  ): PostConnection!
+
+  """Find an author by their public key string."""
+  author(id: String!): Author!
+
+  """
+  Search for an author by a query string. Will search names and optionally descriptions too.
+  """
+  authors(query: String!, excludeIfBlockedBy: [String!], includeDescriptions: Boolean = false): [Author!]!
+
+  """Find all the message types we know about"""
+  messageTypes: [String!]!
+
+  """Find all messages by type"""
+  messagesByType(messageType: String!): String!
+
+  """Find a message by key string"""
+  message(id: String!): String!
+}
+
+type Thread {
+  root: Post!
+  replies: [Post!]!
+  isPrivate: Boolean!
+}
+
+type ThreadConnection {
+  nodes: [Thread!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
