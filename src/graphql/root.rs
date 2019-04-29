@@ -395,7 +395,17 @@ graphql_object!(Query: Context |&self| {
 
     /// Find all the message types we know about
     field messageTypes(&executor) -> FieldResult<Vec<String>>{
-        Err("Not implemented")?
+        let connection = executor.context().connection.lock()?;
+        let results = messages_table
+            .select(messages_content_type)
+            .filter(messages_content_type.is_not_null())
+            .distinct()
+            .load::<Option<String>>(&(*connection))?
+            .into_iter()
+            .filter_map(|message_type|{message_type})
+            .collect();
+
+        Ok(results)
     }
 
     /// Find all messages by type
