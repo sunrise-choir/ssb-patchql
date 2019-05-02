@@ -117,9 +117,11 @@ fn attempt_decryption(mut message: SsbMessage, secret_keys: &[SecretKey]) -> (bo
 mod tests {
     use crate::diesel::prelude::*;
     use crate::execute_pragmas;
-    use crate::models::*;
+    use crate::models::messages::Message;
+    use crate::models::keys::Key;
     use crate::schema::keys::dsl::*;
     use crate::schema::messages::dsl::*;
+    use crate::db::open_connection;
     use diesel::result::Error;
     use dotenv::dotenv;
     use std::env;
@@ -127,9 +129,8 @@ mod tests {
     pub fn establish_connection() -> SqliteConnection {
         dotenv().ok();
 
-        let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-        let connection = SqliteConnection::establish(&database_url)
-            .expect(&format!("Error connecting to {}", database_url));
+        let database_url = env::var("TEST_DATABASE_URL").expect("DATABASE_URL must be set");
+        let connection = open_connection(&database_url);
 
         execute_pragmas(&connection).unwrap();
 

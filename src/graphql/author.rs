@@ -235,3 +235,4 @@ graphql_object!(Author: Context |&self| {
         Ok(authors)
     }
 });
+
