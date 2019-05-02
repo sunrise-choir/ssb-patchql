@@ -39,5 +39,21 @@ Example Queries:
 
 ## Development
 
-- rustup
-- `process` mutation
+### Install the graphql-cli
+
+With node / npm installed:
+
+`$ npm install -g graphql-cli`
+
+### Generate a new `schema.graphql`
+
+Start the server using `$ cargo run`
+
+and in another terminal:
+
+`$ graphql get-schema`
+
+### Lint the generated schema for errors
+
+`$ graphql lint` (and press enter to accept the default option)
+
