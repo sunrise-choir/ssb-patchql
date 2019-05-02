@@ -11,6 +11,9 @@ pub struct ThreadConnection {
 }
 
 graphql_object!(ThreadConnection: Context |&self| {
+    description: "Connection to collections of threads"
+
+    /// The nodes in this connection
     field nodes(&executor) -> Vec<Thread>{
         self.thread_keys
             .iter()
@@ -20,10 +23,12 @@ graphql_object!(ThreadConnection: Context |&self| {
             .collect::<Vec<Thread>>()
     }
 
+    /// The relay-spec pageInfo for this connection
     field page_info(&executor) -> &PageInfo{
         &self.page_info
     }
 
+    /// The total count of posts in this connection.
     field total_count(&executor) -> i32 {
         self.thread_keys.len() as i32
     }

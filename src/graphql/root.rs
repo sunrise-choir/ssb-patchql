@@ -59,6 +59,7 @@ fn encode_cursor(cursor: i64) -> String {
 
 graphql_object!(Query: Context |&self| {
 
+    description: "All the available root queries."
 
     /// Find a thread by the key string of the root message.
     field thread(&executor, root_id: String, order_by = (OrderBy::Received): OrderBy) -> FieldResult<Thread> {
@@ -90,7 +91,9 @@ graphql_object!(Query: Context |&self| {
         /// Use a cursor string to get results after the cursor
         after: Option<String>,
         /// Limit the number or results to get.
-        next = 10: i32,
+        last = 10: i32,
+        /// Limit the number or results to get.
+        first = 10: i32,
         /// Find public, private or all threads.
         privacy = (Privacy::Public): Privacy,
         /// Include threads whose root message is authored by one of the provided authors
@@ -108,6 +111,8 @@ graphql_object!(Query: Context |&self| {
         ) -> FieldResult<ThreadConnection> {
 
         //TODO Filtering by date ranges!
+
+        let mut next = 10;
 
         // Get the context from the executor.
         let connection = executor.context().connection.lock()?;
@@ -188,12 +193,15 @@ graphql_object!(Query: Context |&self| {
         query = match (&before, &after) {
             (Some(b), None) => {
                 let start_cursor = decode_cursor(&b)?;
+                next = last;
 
                 query
                     .filter(root_posts_flume_seq.gt(start_cursor))
             },
             (None, Some(a)) => {
                 let start_cursor = decode_cursor(&a)?;
+                next = first;
+
                 query
                     .filter(root_posts_flume_seq.lt(start_cursor))
             },
@@ -236,6 +244,7 @@ graphql_object!(Query: Context |&self| {
             start_cursor: Some(encode_cursor(first_seq)),
             end_cursor: encode_cursor(last_seq),
             has_next_page,
+            has_previous_page: true //TODO make this work.
         };
 
         Ok(ThreadConnection {
@@ -273,7 +282,9 @@ graphql_object!(Query: Context |&self| {
         /// Use a cursor string to get results after the cursor
         after: Option<String>,
         /// Limit the number or results to get.
-        next = 10: i32,
+        first = 10: i32,
+        /// Limit the number or results to get.
+        last = 10: i32,
         /// Find posts that match the query string.
         query: Option<String>,
         /// Find public, private or all threads.
@@ -286,6 +297,14 @@ graphql_object!(Query: Context |&self| {
         order_by = (OrderBy::Received): OrderBy,
     ) -> FieldResult<PostConnection> {
 
+        let mut next = 10;
+
+        if before.is_some(){
+            next = last
+        }
+        if after.is_some(){
+            next = first
+        }
         //TODO: Date range
         let connection = executor.context().connection.lock()?;
 
@@ -366,6 +385,7 @@ graphql_object!(Query: Context |&self| {
             start_cursor: Some(encode_cursor(first_seq)),
             end_cursor: encode_cursor(last_seq),
             has_next_page,
+            has_previous_page: true //TODO make this work.
         };
 
         Ok(PostConnection{

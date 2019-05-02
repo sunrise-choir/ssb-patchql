@@ -33,6 +33,10 @@ struct PostText {
     text: String,
 }
 graphql_object!(Post: Context |&self| {
+
+    description: "A post by an author. Posts may contain text / images etc. Same idea as a facebook / twitter post"
+
+    /// The globally unique identifier of this post, derived from the hash of this message.
     field id(&executor) -> FieldResult<String> {
         let connection = executor.context().connection.lock()?;
         let key = keys_table.find(self.key_id)
@@ -42,6 +46,7 @@ graphql_object!(Post: Context |&self| {
         Ok(key)
     }
 
+    /// The author of this post.
     field author(&executor) -> FieldResult<Author> {
         let connection = executor.context().connection.lock()?;
         let author_id = messages_table
@@ -52,6 +57,8 @@ graphql_object!(Post: Context |&self| {
         Ok(Author{author_id})
     }
 
+    /// The likes other authors have published about this post. TODO: move this into
+    /// likes_connection
     field likes(&executor) -> FieldResult<Vec<Like>> {
         let connection = executor.context().connection.lock()?;
 
@@ -72,7 +79,10 @@ graphql_object!(Post: Context |&self| {
 
         Ok(result)
     }
-    field likes_connection(&executor) -> FieldResult<LikeConnection> {
+    /// The connection to likes on this post.
+    field likes_connection(&executor, after: Option<String>, first = 10: i32) -> FieldResult<LikeConnection> {
+        //TODO: I think the LikeConnection type needs a rethink. It should probaly use cursors
+        //properly and have edges / nodes with likes.
         let connection = executor.context().connection.lock()?;
 
         let count = votes_table
@@ -84,6 +94,8 @@ graphql_object!(Post: Context |&self| {
 
         Ok(LikeConnection{count: count as i32})
     }
+
+    /// The text body of the post.
     field text(&executor) -> FieldResult<String> {
         let connection = executor.context().connection.lock()?;
         let content = messages_table
@@ -96,6 +108,8 @@ graphql_object!(Post: Context |&self| {
 
         Ok(value.text)
     }
+    /// If this post forks from another discussion, the forksFromKey is the id of the message
+    /// that it forks from.
     field forks_from_key(&executor) -> FieldResult<Option<String>> {
         let connection = executor.context().connection.lock()?;
         let fork_key = messages_table
@@ -108,6 +122,8 @@ graphql_object!(Post: Context |&self| {
             .optional()?;
         Ok(fork_key)
     }
+    /// If this post is a part of a thread then the root_key is the id of the messsage that started
+    /// the thread.
     field root_key(&executor) -> FieldResult<Option<String>> {
         let connection = executor.context().connection.lock()?;
         let root_key = messages_table
@@ -121,12 +137,9 @@ graphql_object!(Post: Context |&self| {
 
         Ok(root_key)
     }
+    /// Any other messages outside this thread that link / reference this one.
     field references(&executor) -> FieldResult<Vec<Post>> {
         let connection = executor.context().connection.lock()?;
-
-        //want to get all messages of type post that link_to this post's key_id
-        //and who have a different root
-        //and who have a different fork
 
         let posts = links_table
             .inner_join(messages_table.on(
@@ -157,6 +170,7 @@ graphql_object!(Post: Context |&self| {
 
         Ok(posts)
     }
+    /// Any other threads that have forked from this one.
     field forks(&executor) -> FieldResult<Vec<Post>> {
         let connection = executor.context().connection.lock()?;
 

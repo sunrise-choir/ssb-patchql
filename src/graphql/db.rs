@@ -12,13 +12,29 @@ use private_box::SecretKey;
 #[derive(Default)]
 pub struct DbMutation {}
 
+/// The result of running a process mutation, giving the number of messages processed (the
+/// chunkSize) and the new lastest flume_sequence. TBD if the flume seq should just be an opaque
+/// cursor.
 #[derive(GraphQLObject)]
 struct ProcessResults {
+    /// The number of entries inserted into the db (although not all of them will be useful to the
+    /// application)
     chunk_size: i32,
+    /// The most recent sequence number processed from the offset log. The offset log is the source
+    /// of truth that this db is built off. This is unlikely to be used by an application and may
+    /// be removed in the future.
     latest_sequence: Option<f64>,
 }
 
 graphql_object!(DbMutation: Context |&self| {
+    description: "Mutations available to change the state of the db"
+
+    /// This db will lag behind the offset log and needs calls to `process` to bring the db up to
+    /// date. At first this might seem annoying and that the db should do this automatically. But
+    /// this is a conscious design decision to give the app control of when cpu is used. This is
+    /// very important on resource constrained devices, or even just when starting up the app. This
+    /// is a major pain point in the javascript flume-db implementation that we're avoiding by
+    /// doing this.
     field process(&executor, chunk_size = 100: i32) -> FieldResult<ProcessResults> {
         //TODO: get the secret key from env
         let secret_key_bytes = [0u8];

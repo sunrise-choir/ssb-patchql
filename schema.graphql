@@ -1,40 +1,89 @@
 # source: http://localhost:8080/graphql
-# timestamp: Mon Apr 29 2019 18:07:40 GMT+1200 (NZST)
+# timestamp: Thu May 02 2019 17:32:45 GMT+1200 (NZST)
 
 schema {
   query: Query
   mutation: DbMutation
 }
 
+"""The author of a feed."""
 type Author {
+  """The self assigned name of the author, if given."""
   name: String
+
+  """The self assigned description of the author, if given."""
   description: String
+
+  """The self assigned image_link of the author, if given."""
   imageLink: String
+
+  """The public key of the author on the SSB network."""
   id: String!
+
+  """
+  The author's relationship toward another author. Eg, Does this author block the other?
+  """
   contactStatusTo(otherAuthor: String!): PublicPrivateContactStatus!
+
+  """
+  Another author's relationship toward this author. Eg, do they block this author?
+  """
   contactStatusFrom(otherAuthor: String!): PublicPrivateContactStatus!
+
+  """The authors that this author follows."""
   follows: [Author!]!
+
+  """The authors that this author blocks."""
   blocks: [Author!]!
+
+  """Other authors that follow this author."""
   followedBy: [Author!]!
+
+  """Other authors that block this author."""
   blockedBy: [Author!]!
 }
 
+"""An author's relationship with another author."""
 enum ContactState {
-  FOLLOW
+  """
+  Blocking means an author does not want to see another's messages or replicate their feed.
+  """
   BLOCK
+
+  """
+  Following means an author wants to see another's messages, and replicate their feed.
+  """
+  FOLLOW
+
+  """Neutral means they have not followed or blocked an author."""
   NEUTRAL
 }
 
+"""Mutations available to change the state of the db"""
 type DbMutation {
+  """
+  This db will lag behind the offset log and needs calls to `process` to bring the db up to
+  date. At first this might seem annoying and that the db should do this automatically. But
+  this is a conscious design decision to give the app control of when cpu is used. This is
+  very important on resource constrained devices, or even just when starting up the app. This
+  is a major pain point in the javascript flume-db implementation that we're avoiding by
+  doing this.
+  """
   process(chunkSize: Int = 100): ProcessResults!
 }
 
+"""A like or vote published about a certain message."""
 type Like {
+  """The author of the like"""
   author: Author!
+
+  """The integer value of the like, may be positive or negative."""
   value: Int!
 }
 
+"""The connection to the likes on a message"""
 type LikeConnection {
+  """The number of likes"""
   count: Int!
 }
 
@@ -52,66 +101,135 @@ enum OrderBy {
   ASSERTED
 
   """
+  Order by causal timestamp.
+  Use this for sorting posts in a thread. Don't use this for sorting all threads in the database, it's not supported.
+  """
+  CAUSAL
+
+  """
   Order by received timestamp (the time that the message was inserted into your db).
   Note that using received timestamp does not work well when the db has
   downloaded many feeds all at once (like during onboarding to the network)
   because feeds are inserted into your db in a random order.
   """
   RECEIVED
-
-  """
-  Order by causal timestamp.
-  Use this for sorting posts in a thread. Don't use this for sorting all threads in the database, it's not supported.
-  """
-  CAUSAL
 }
 
+"""A relay-spec PageInfo object used for pagination of queries."""
 type PageInfo {
+  """Is there a next page available to read?"""
   hasNextPage: Boolean!
+
+  """Is there a previous page available to read?"""
+  hasPreviousPage: Boolean!
+
+  """The cursor for the last item in the page."""
   endCursor: String!
+
+  """The cursor for the first item in the page."""
   startCursor: String
 }
 
+"""
+A post by an author. Posts may contain text / images etc. Same idea as a facebook / twitter post
+"""
 type Post {
+  """
+  The globally unique identifier of this post, derived from the hash of this message.
+  """
   id: String!
+
+  """The author of this post."""
   author: Author!
+
+  """
+  The likes other authors have published about this post. TODO: move this into
+  likes_connection
+  """
   likes: [Like!]!
-  likesConnection: LikeConnection!
+
+  """The connection to likes on this post."""
+  likesConnection(after: String, first: Int = 10): LikeConnection!
+
+  """The text body of the post."""
   text: String!
+
+  """
+  If this post forks from another discussion, the forksFromKey is the id of the message
+  that it forks from.
+  """
   forksFromKey: String
+
+  """
+  If this post is a part of a thread then the root_key is the id of the messsage that started
+  the thread.
+  """
   rootKey: String
+
+  """Any other messages outside this thread that link / reference this one."""
   references: [Post!]!
+
+  """Any other threads that have forked from this one."""
   forks: [Post!]!
 }
 
+"""Connection to collections of posts"""
 type PostConnection {
+  """The total count of posts in this connection."""
   totalCount: Int!
+
+  """The nodes in this connection"""
   nodes: [Post!]!
+
+  """The relay-spec pageInfo for this connection"""
   pageInfo: PageInfo!
 }
 
 """Retrieve objects that are private, public, or both."""
 enum Privacy {
+  """Both public and private."""
+  ALL
+
   """Only private."""
   PRIVATE
 
   """Only public."""
   PUBLIC
-
-  """Both public and private."""
-  ALL
 }
 
+"""
+The result of running a process mutation, giving the number of messages
+processed (the chunkSize) and the new lastest flume_sequence. TBD if the flume
+seq should just be an opaque cursor.
+"""
 type ProcessResults {
+  """
+  The number of entries inserted into the db (although not all of them will be useful to the application)
+  """
   chunkSize: Int!
+
+  """
+  The most recent sequence number processed from the offset log. The offset log
+  is the source of truth that this db is built off. This is unlikely to be used
+  by an application and may be removed in the future.
+  """
   latestSequence: Float
 }
 
+"""
+An author's Public and Private contact states. Author's may publish private
+block and follow messages only visible to themselves. This means that the app's
+user can see their own private contact messages, but not anyone else's.
+"""
 type PublicPrivateContactStatus {
-  public: ContactState!
+  """Encrypted contact state, availble only to this app's user."""
   private: ContactState
+
+  """Publically published contact state"""
+  public: ContactState!
 }
 
+"""All the available root queries."""
 type Query {
   """Find a thread by the key string of the root message."""
   thread(rootId: String!, orderBy: OrderBy): Thread!
@@ -129,7 +247,10 @@ type Query {
     after: String
 
     """Limit the number or results to get."""
-    next: Int = 10
+    last: Int = 10
+
+    """Limit the number or results to get."""
+    first: Int = 10
 
     """Find public, private or all threads."""
     privacy: Privacy
@@ -175,7 +296,10 @@ type Query {
     after: String
 
     """Limit the number or results to get."""
-    next: Int = 10
+    first: Int = 10
+
+    """Limit the number or results to get."""
+    last: Int = 10
 
     """Find posts that match the query string."""
     query: String
@@ -211,14 +335,28 @@ type Query {
   message(id: String!): String!
 }
 
+"""
+A thread of posts. Threads have a root post and a collection of reply posts.
+"""
 type Thread {
+  """The root (intitial) post."""
   root: Post!
+
+  """The reply posts."""
   replies: [Post!]!
+
+  """Whether or not the messages are encrypted."""
   isPrivate: Boolean!
 }
 
+"""Connection to collections of threads"""
 type ThreadConnection {
+  """The nodes in this connection"""
   nodes: [Thread!]!
+
+  """The relay-spec pageInfo for this connection"""
   pageInfo: PageInfo!
+
+  """The total count of posts in this connection."""
   totalCount: Int!
 }

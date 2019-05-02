@@ -12,9 +12,13 @@ pub struct Thread {
 }
 
 graphql_object!(Thread: Context |&self| {
+    description: "A thread of posts. Threads have a root post and a collection of reply posts."
+
+    /// The root (intitial) post.
     field root(&executor) -> &Post {
         &self.root
     }
+    /// The reply posts.
     field replies(&executor) -> Vec<Post>{
         let connection = executor.context().connection.lock().unwrap();
 
@@ -30,5 +34,6 @@ graphql_object!(Thread: Context |&self| {
             })
             .collect::<Vec<Post>>()
     }
+    /// Whether or not the messages are encrypted.
     field is_private() -> bool {false}
 });

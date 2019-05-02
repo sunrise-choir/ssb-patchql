@@ -1,12 +1,12 @@
 #[derive(GraphQLEnum)]
 /// Retrieve objects that are private, public, or both.
 pub enum Privacy {
+    /// Both public and private.
+    All,
     /// Only private.
     Private,
     /// Only public.
     Public,
-    /// Both public and private.
-    All,
 }
 
 #[derive(GraphQLEnum)]
@@ -20,6 +20,12 @@ pub enum OrderBy {
     /// before on the network. If you're sorting posts in a thread, prefer using causal sort.
     Asserted,
 
+    /// Order by causal timestamp.
+    ///
+    /// Use this for sorting posts in a thread. Don't use this for sorting all threads in the
+    /// database, it's not supported.
+    Causal,
+
     /// Order by received timestamp (the time that the message was inserted into your db).
     ///
     /// Note that using received timestamp does not work well when the db has downloaded many feeds
@@ -27,9 +33,4 @@ pub enum OrderBy {
     /// in a random order.
     Received,
 
-    /// Order by causal timestamp.
-    ///
-    /// Use this for sorting posts in a thread. Don't use this for sorting all threads in the
-    /// database, it's not supported.
-    Causal,
 }

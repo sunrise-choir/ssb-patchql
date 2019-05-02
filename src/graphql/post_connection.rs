@@ -10,9 +10,13 @@ pub struct PostConnection {
 }
 
 graphql_object!(PostConnection: Context |&self| {
+    description: "Connection to collections of posts"
+
+    /// The total count of posts in this connection.
     field total_count(&executor) -> i32 {
         self.post_keys.len() as i32
     }
+    /// The nodes in this connection
     field nodes(&executor) -> Vec<Post>{
 
         self.post_keys
@@ -23,6 +27,7 @@ graphql_object!(PostConnection: Context |&self| {
             .collect::<Vec<Post>>()
     }
 
+    /// The relay-spec pageInfo for this connection
     field page_info(&executor) -> &PageInfo{
         &self.page_info
     }
