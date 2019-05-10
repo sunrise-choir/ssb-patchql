@@ -119,8 +119,25 @@ graphql_object!(Query: Context |&self| {
 
         let mut query = root_posts_table
             .inner_join(messages_table.on(root_posts_key_id.eq(messages_key_id)))
+            .inner_join(mentions_table.on(mentions_link_from_key_id.eq(messages_key_id)))
             .select((root_posts_key_id, root_posts_flume_seq))
             .into_boxed();
+
+        if let Some(mentions_authors) = mentions_authors {
+            let author_key_ids = authors_table
+                .select(authors_id)
+                .filter(authors_author.eq_any(mentions_authors))
+                .load::<Option<i32>>(&(*connection))?;
+
+            let sub_query = reply_posts_table
+                .select(reply_posts_root_post_id)
+                .filter(reply_posts_author_id.nullable().eq_any(author_key_ids.clone()));
+
+            query = query
+                .or_filter(mentions_link_to_author_id.nullable().eq_any(author_key_ids))
+                .or_filter(root_posts_key_id.eq_any(sub_query));
+        }
+
 
         if let Some(authors) = roots_authored_by {
             let author_key_ids = authors_table
@@ -305,6 +322,7 @@ graphql_object!(Query: Context |&self| {
         if after.is_some(){
             next = first
         }
+
         //TODO: Date range
         let connection = executor.context().connection.lock()?;
 
@@ -355,10 +373,34 @@ graphql_object!(Query: Context |&self| {
                     .filter(messages_author_id.nullable().eq_any(author_key_ids));
         }
 
+        boxed_query = match (&before, &after) {
+            (Some(b), None) => {
+                let start_cursor = decode_cursor(&b)?;
+                next = last;
+
+                boxed_query
+                    .filter(messages_flume_seq.gt(start_cursor))
+            },
+            (None, Some(a)) => {
+                let start_cursor = decode_cursor(&a)?;
+                next = first;
+
+                boxed_query
+                    .filter(messages_flume_seq.lt(start_cursor))
+            },
+            (None, None) => {
+                boxed_query
+            },
+            (Some(_), Some(_)) => {
+                Err("Before and After can't be set at the same time.")?
+            }
+        };
+
         let results = boxed_query
             .filter(messages_content_type.eq("post"))
             .order(messages_flume_seq.desc()) // Hmmm should we switch this off when we're using a query and order by query ranking value?
             .limit(next as i64)
+            .distinct()
             .load::<(i32, Option<i64>)>(&(*connection))?;
 
         let post_keys = results

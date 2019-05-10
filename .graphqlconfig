@@ -1,12 +1,1 @@
-{
-  "projects": {
-    "ssb-patchql": {
-      "schemaPath": "schema.graphql",
-      "extensions": {
-        "endpoints": {
-          "default": "http://localhost:8080/graphql"
-        }
-      }
-    }
-  }
-}
+{"projects":{"ssb-patchql":{"schemaPath":"schema.graphql","extensions":{"endpoints":{"default":"http://localhost:8080/graphql"},"generate-fragments":{"output":"fragments/ssb-patchql.fragments.js","generator":"js"}}}}}
