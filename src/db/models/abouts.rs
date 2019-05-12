@@ -54,7 +54,7 @@ pub struct ImageInfo {
 }
 #[derive(Deserialize)]
 pub struct AboutImage {
-    pub image: ImageInfo,
+    pub image: Value,
 }
 
 pub trait About {
@@ -75,7 +75,13 @@ impl About for AboutDescription {
 
 impl About for AboutImage {
     fn about(&self) -> &str {
-        &self.image.link
+        match self.image {
+            Value::Object(ref details)=> {
+                details["link"].as_str().unwrap()
+            }
+            Value::String(ref link) => link,
+            _ => ""
+        }
     }
 }
 
