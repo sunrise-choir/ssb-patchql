@@ -1,6 +1,7 @@
 use super::page_info::PageInfo;
 use bytes::{ByteOrder, LittleEndian};
 use diesel::dsl::sql;
+use diesel::dsl::max;
 use diesel::prelude::*;
 use juniper::FieldResult;
 
@@ -60,6 +61,19 @@ fn encode_cursor(cursor: i64) -> String {
 graphql_object!(Query: Context |&self| {
 
     description: "All the available root queries."
+
+    /// The most recent db cursor since the last process mutation
+    field db_cursor(&executor) -> FieldResult<String>{
+
+        let connection = executor.context().connection.lock()?;
+
+        let seq = messages_table
+            .select(max(messages_flume_seq))
+            .first::<Option<i64>>(&(*connection))?
+            .unwrap_or(0);
+
+        Ok(encode_cursor(seq))
+    }
 
     /// Find a thread by the key string of the root message.
     field thread(&executor, root_id: String, order_by = (OrderBy::Received): OrderBy) -> FieldResult<Thread> {
