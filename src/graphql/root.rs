@@ -1,7 +1,7 @@
 use super::page_info::PageInfo;
 use bytes::{ByteOrder, LittleEndian};
-use diesel::dsl::sql;
 use diesel::dsl::max;
+use diesel::dsl::sql;
 use diesel::prelude::*;
 use juniper::FieldResult;
 
@@ -30,8 +30,7 @@ use crate::db::schema::messages::dsl::{
     key_id as messages_key_id, messages as messages_table,
 };
 use crate::db::schema::reply_posts::dsl::{
-    author_id as reply_posts_author_id, flume_seq as reply_posts_flume_seq,
-    key_id as reply_posts_key_id, reply_posts as reply_posts_table,
+    author_id as reply_posts_author_id, reply_posts as reply_posts_table,
     root_post_id as reply_posts_root_post_id,
 };
 use crate::db::schema::root_posts::dsl::{

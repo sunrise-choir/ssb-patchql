@@ -52,7 +52,10 @@ fn main() {
     let offset_log = match OffsetLog::open_read_only(&offset_log_path) {
         Ok(log) => log,
         Err(_) => {
-            eprintln!("Failed to open offset log file at path: {}", &offset_log_path);
+            eprintln!(
+                "Failed to open offset log file at path: {}",
+                &offset_log_path
+            );
             return;
         }
     };
@@ -61,7 +64,7 @@ fn main() {
 
     let connection = open_connection(&database_url);
 
-    db::models::authors::set_is_me(&connection, &pub_key_string ).unwrap();
+    db::models::authors::set_is_me(&connection, &pub_key_string).unwrap();
 
     let locked_connection_ref = Arc::new(Mutex::new(connection));
 

@@ -2,7 +2,7 @@ use crate::db::schema::*;
 use crate::db::*;
 
 use crate::db::schema::authors::dsl::{
-    author as authors_author, authors as authors_table, id as authors_id, is_me as authors_is_me
+    author as authors_author, authors as authors_table, id as authors_id, is_me as authors_is_me,
 };
 use diesel::insert_into;
 
@@ -43,6 +43,6 @@ pub fn set_is_me(connection: &SqliteConnection, author: &str) -> Result<(), Erro
         .set(authors_is_me.eq(true))
         .filter(authors_author.eq(author))
         .execute(&(*connection))?;
-    
+
     Ok(())
 }

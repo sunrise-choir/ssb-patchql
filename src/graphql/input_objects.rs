@@ -32,5 +32,4 @@ pub enum OrderBy {
     /// all at once (like during onboarding to the network) because feeds are inserted into your db
     /// in a random order.
     Received,
-
 }

@@ -95,13 +95,10 @@ fn attempt_decryption(mut message: SsbMessage, secret_keys: &[SecretKey]) -> (bo
 
             message.value.content = secret_keys
                 .iter()
-                .find_map(|secret_key|{
-                    private_box::decrypt(&bytes, secret_key)
-                })
+                .find_map(|secret_key| private_box::decrypt(&bytes, secret_key))
                 .map(|data| {
                     is_decrypted = true;
-                    serde_json::from_slice(&data)
-                        .unwrap_or(Value::Null) // Whatever was decrypted wasn't json.
+                    serde_json::from_slice(&data).unwrap_or(Value::Null) // Whatever was decrypted wasn't json.
                 })
                 .unwrap_or(Value::Null); //If we can't decrypt it, throw it away.
 
@@ -115,13 +112,13 @@ fn attempt_decryption(mut message: SsbMessage, secret_keys: &[SecretKey]) -> (bo
 
 #[cfg(test)]
 mod tests {
+    use crate::db::open_connection;
     use crate::diesel::prelude::*;
     use crate::execute_pragmas;
-    use crate::models::messages::Message;
     use crate::models::keys::Key;
+    use crate::models::messages::Message;
     use crate::schema::keys::dsl::*;
     use crate::schema::messages::dsl::*;
-    use crate::db::open_connection;
     use diesel::result::Error;
     use dotenv::dotenv;
     use std::env;

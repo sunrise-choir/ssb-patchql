@@ -3,7 +3,6 @@ use crate::db::{Error, SqliteConnection};
 use crate::lib::SsbMessage;
 use serde_json::Value;
 
-use crate::db::models::messages::Message;
 use crate::db::schema::reply_posts;
 use crate::db::schema::reply_posts::dsl::reply_posts as reply_posts_table;
 use crate::db::schema::root_posts;
@@ -38,7 +37,7 @@ pub fn insert_post(
     author_id: i32,
     seq: i64,
 ) -> Result<(), Error> {
-    let root_key_id = match message.value.content["root"] {
+    match message.value.content["root"] {
         //A reply
         Value::String(ref key) => {
             let id = find_or_create_key(&connection, &key).unwrap();

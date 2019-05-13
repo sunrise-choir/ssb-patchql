@@ -14,12 +14,10 @@ use crate::db::schema::links::dsl::{
     links as links_table,
 };
 use crate::db::schema::messages::dsl::{
-    author_id as messages_author_id, content as messages_content,
-    content_type as messages_content_type, fork_key_id, fork_key_id as messages_fork_key_id,
-    key_id as messages_key_id, messages as messages_table, root_key_id,
-    root_key_id as messages_root_key_id,
-    asserted_time as messages_asserted_time,
-    received_time as messages_received_time
+    asserted_time as messages_asserted_time, author_id as messages_author_id,
+    content as messages_content, content_type as messages_content_type, fork_key_id,
+    fork_key_id as messages_fork_key_id, key_id as messages_key_id, messages as messages_table,
+    received_time as messages_received_time, root_key_id, root_key_id as messages_root_key_id,
 };
 use crate::db::schema::votes::dsl::{
     link_to_key_id as votes_link_to_key_col, votes as votes_table,

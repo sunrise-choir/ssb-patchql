@@ -76,11 +76,9 @@ impl About for AboutDescription {
 impl About for AboutImage {
     fn about(&self) -> &str {
         match self.image {
-            Value::Object(ref details)=> {
-                details["link"].as_str().unwrap()
-            }
+            Value::Object(ref details) => details["link"].as_str().unwrap(),
             Value::String(ref link) => link,
-            _ => ""
+            _ => "",
         }
     }
 }

@@ -30,7 +30,6 @@ pub fn execute_pragmas(connection: &SqliteConnection) -> Result<(), Error> {
 }
 
 pub fn open_connection(database_url: &str) -> SqliteConnection {
-
     let connection = SqliteConnection::establish(&database_url)
         .expect(&format!("Error connecting to {}", database_url));
 
