@@ -18,6 +18,8 @@ use crate::db::schema::messages::dsl::{
     content_type as messages_content_type, fork_key_id, fork_key_id as messages_fork_key_id,
     key_id as messages_key_id, messages as messages_table, root_key_id,
     root_key_id as messages_root_key_id,
+    asserted_time as messages_asserted_time,
+    received_time as messages_received_time
 };
 use crate::db::schema::votes::dsl::{
     link_to_key_id as votes_link_to_key_col, votes as votes_table,
@@ -93,6 +95,38 @@ graphql_object!(Post: Context |&self| {
             .count();
 
         Ok(LikeConnection{count: count as i32})
+    }
+
+    /// The asserted timestamp of the post. 
+    /// Asserted means that it's the time the author claims that they published the message.
+    /// You can't totally trust this value, the author may have their clock set wrong, be in a
+    /// different timezone, or they might be deliberately setting an incorrect published time for
+    /// some reason, eg. to prevent leaking meta-data.
+    field asserted_timestamp(&executor) -> FieldResult<Option<f64>> {
+        let connection = executor.context().connection.lock()?;
+        let time = messages_table
+            .select(messages_asserted_time)
+            .filter(messages_key_id.eq(self.key_id))
+            .first::<Option<f64>>(&(*connection))?;
+
+        Ok(time)
+    }
+
+    /// The received timestamp of the post. 
+    /// This is the time that the message was inserted into your db on this machine.
+    /// You know that a message cannot have been published any later than the received timestamp.
+    /// **BUT** you can't tell if the message was originally published 5 seconds or 5 years before it was
+    /// inserted into your database. This **can happen** eg when an author comes into your follow
+    /// range but has been on the network for a long time and you download their entire feed in one
+    /// go.
+    field received_timestamp(&executor) -> FieldResult<f64> {
+        let connection = executor.context().connection.lock()?;
+        let time = messages_table
+            .select(messages_received_time)
+            .filter(messages_key_id.eq(self.key_id))
+            .first::<f64>(&(*connection))?;
+
+        Ok(time)
     }
 
     /// The text body of the post.

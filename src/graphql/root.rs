@@ -63,30 +63,35 @@ graphql_object!(Query: Context |&self| {
     description: "All the available root queries."
 
     /// The most recent db cursor since the last process mutation
-    field db_cursor(&executor) -> FieldResult<String>{
+    /// Cursor will be null when the db is empty.
+    field db_cursor(&executor) -> FieldResult<Option<String>>{
 
         let connection = executor.context().connection.lock()?;
 
-        let seq = messages_table
+        let cursor = messages_table
             .select(max(messages_flume_seq))
             .first::<Option<i64>>(&(*connection))?
-            .unwrap_or(0);
+            .map(|seq|{
+                encode_cursor(seq)
+            });
 
-        Ok(encode_cursor(seq))
+        Ok(cursor)
     }
 
     /// The public key of this user's identity
-    field who_am_i(&executor) -> FieldResult<Author>{
+    field who_am_i(&executor) -> FieldResult<Option<Author>>{
 
         let connection = executor.context().connection.lock()?;
 
-        let author_key_id = authors_table
+        let author = authors_table
             .select(authors_id)
             .filter(authors_is_me.eq(true))
             .first::<Option<i32>>(&(*connection))?
-            .ok_or("No author found")?;
+            .map(|author_key_id|{
+                Author{author_id: author_key_id}
+            });
 
-        Ok(Author{author_id: author_key_id})
+        Ok(author)
     }
 
     /// Find a thread by the key string of the root message.
