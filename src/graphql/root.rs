@@ -1,5 +1,5 @@
 use super::page_info::PageInfo;
-use bytes::{ByteOrder, LittleEndian};
+use crate::lib::cursor::*;
 use diesel::dsl::max;
 use diesel::dsl::sql;
 use diesel::prelude::*;
@@ -42,20 +42,6 @@ use crate::db::Context;
 use crate::db::schema::texts::dsl::{rowid as texts_key_id, texts as texts_table};
 
 pub struct Query;
-
-fn decode_cursor(encoded: &str) -> Result<i64, String> {
-    match base64::decode(encoded) {
-        Ok(ref bytes) if bytes.len() < 8 => {
-            Err("Error decoding cursor. Is it a valid base64 encoded i64?".to_string())
-        }
-        Ok(bytes) => Ok(LittleEndian::read_i64(bytes.as_slice())),
-        Err(err) => Err(err.to_string()),
-    }
-}
-
-fn encode_cursor(cursor: i64) -> String {
-    base64::encode(&(cursor as u64).to_le_bytes())
-}
 
 graphql_object!(Query: Context |&self| {
 
