@@ -2,7 +2,7 @@ use crate::db::schema::*;
 use crate::db::*;
 
 use crate::db::schema::authors::dsl::{
-    author as authors_author_row, authors as authors_table, id as authors_id_row,
+    author as authors_author, authors as authors_table, id as authors_id, is_me as authors_is_me
 };
 use diesel::insert_into;
 
@@ -15,19 +15,34 @@ pub struct Author {
 
 pub fn find_or_create_author(connection: &SqliteConnection, author: &str) -> Result<i32, Error> {
     authors_table
-        .select(authors_id_row)
-        .filter(authors_author_row.eq(author))
+        .select(authors_id)
+        .filter(authors_author.eq(author))
         .first::<Option<i32>>(connection)
         .map(|res| res.unwrap())
         .or_else(|_| {
             insert_into(authors_table)
-                .values(authors_author_row.eq(author))
+                .values(authors_author.eq(author))
                 .execute(connection)?;
 
             authors_table
-                .select(authors_id_row)
-                .order(authors_id_row.desc())
+                .select(authors_id)
+                .order(authors_id.desc())
                 .first::<Option<i32>>(connection)
                 .map(|key| key.unwrap())
         })
+}
+
+pub fn set_is_me(connection: &SqliteConnection, author: &str) -> Result<(), Error> {
+    //Clear any previous is_me
+    diesel::update(authors_table)
+        .set(authors_is_me.eq(Option::<bool>::None))
+        .filter(authors_is_me.is_not_null())
+        .execute(&(*connection))?;
+
+    diesel::update(authors_table)
+        .set(authors_is_me.eq(true))
+        .filter(authors_author.eq(author))
+        .execute(&(*connection))?;
+    
+    Ok(())
 }

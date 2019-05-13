@@ -17,7 +17,7 @@ use crate::db::schema::contacts::dsl::{
 };
 
 use crate::db::schema::authors::dsl::{
-    author as authors_author, authors as authors_table, id as authors_id,
+    author as authors_author, authors as authors_table, id as authors_id, is_me as authors_is_me,
 };
 use crate::db::schema::keys::dsl::{id as keys_id_col, key as keys_key_col, keys as keys_table};
 use crate::db::schema::mentions::dsl::{
@@ -73,6 +73,19 @@ graphql_object!(Query: Context |&self| {
             .unwrap_or(0);
 
         Ok(encode_cursor(seq))
+    }
+
+    /// The public key of this user's identity
+    field who_am_i(&executor) -> FieldResult<String>{
+
+        let connection = executor.context().connection.lock()?;
+
+        let my_key = authors_table
+            .select(authors_author)
+            .filter(authors_is_me.eq(true))
+            .first::<String>(&(*connection))?;
+
+        Ok(my_key)
     }
 
     /// Find a thread by the key string of the root message.

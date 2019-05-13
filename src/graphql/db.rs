@@ -2,6 +2,7 @@ use crate::db::*;
 use flumedb::BidirIterator;
 use itertools::Itertools;
 use juniper::FieldResult;
+use std::env;
 
 use crate::db::models::append_item;
 use diesel::prelude::*;
@@ -37,8 +38,14 @@ graphql_object!(DbMutation: Context |&self| {
     /// doing this.
     field process(&executor, chunk_size = 100: i32) -> FieldResult<ProcessResults> {
         //TODO: get the secret key from env
-        let secret_key_bytes = [0u8];
+        let secret_key_string =
+            env::var("SSB_SECRET_KEY").expect("SSB_SECRET_KEY environment variable must be set");
+
+        let secret_key_bytes = base64::decode(&secret_key_string)
+            .unwrap_or(vec![0u8]);
+
         let secret_key = SecretKey::from_slice(&secret_key_bytes).unwrap_or_else(|| {
+            warn!("Could not parse valid ssb-secret for decryption. Messages will not be decrypted");
             SecretKey::from_slice(&[0; 64]).unwrap()
         });
         let keys = [secret_key];

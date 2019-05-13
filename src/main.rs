@@ -46,6 +46,9 @@ fn main() {
 
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
+    let pub_key_string =
+        env::var("SSB_PUB_KEY").expect("SSB_PUB_KEY environment variable must be set");
+
     let offset_log = match OffsetLog::open_read_only(&offset_log_path) {
         Ok(log) => log,
         Err(_) => {
@@ -53,9 +56,13 @@ fn main() {
             return;
         }
     };
+
     let locked_log_ref = Arc::new(Mutex::new(offset_log));
 
     let connection = open_connection(&database_url);
+
+    db::models::authors::set_is_me(&connection, &pub_key_string ).unwrap();
+
     let locked_connection_ref = Arc::new(Mutex::new(connection));
 
     let mut mount = Mount::new();
