@@ -1,5 +1,5 @@
 # source: http://localhost:8080/graphql
-# timestamp: Mon May 13 2019 17:37:07 GMT+1200 (NZST)
+# timestamp: Mon May 13 2019 18:32:00 GMT+1200 (NZST)
 
 schema {
   query: Query
@@ -199,10 +199,19 @@ type PostConnection {
   totalCount: Int!
 
   """The nodes in this connection"""
-  nodes: [Post!]!
+  edges: [PostEdge!]!
 
   """The relay-spec pageInfo for this connection"""
   pageInfo: PageInfo!
+}
+
+"""Edge connection to a post"""
+type PostEdge {
+  """The nodes in this connection"""
+  node: Post!
+
+  """The cursor for this node"""
+  cursor: String
 }
 
 """Retrieve objects that are private, public, or both."""
