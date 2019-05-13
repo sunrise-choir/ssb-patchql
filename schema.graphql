@@ -1,5 +1,5 @@
 # source: http://localhost:8080/graphql
-# timestamp: Mon May 13 2019 18:32:00 GMT+1200 (NZST)
+# timestamp: Mon May 13 2019 20:00:31 GMT+1200 (NZST)
 
 schema {
   query: Query
@@ -81,12 +81,6 @@ type Like {
   value: Int!
 }
 
-"""The connection to the likes on a message"""
-type LikeConnection {
-  """The number of likes"""
-  count: Int!
-}
-
 """
 Retrieve objects ordered by asserted publish time, by received time, or attempt to causally sort by cypher links.
 """
@@ -142,14 +136,11 @@ type Post {
   """The author of this post."""
   author: Author!
 
-  """
-  The likes other authors have published about this post. TODO: move this into
-  likes_connection
-  """
+  """The likes other authors have published about this post."""
   likes: [Like!]!
 
-  """The connection to likes on this post."""
-  likesConnection(after: String, first: Int = 10): LikeConnection!
+  """The number of likes on this post."""
+  likesCount: Int!
 
   """
   The asserted timestamp of the post.

@@ -19,6 +19,6 @@ graphql_object!(Like: Context |&self| {
         Ok(author)
     },
 
-    /// The integer value of the like, may be positive or negative. 
+    /// The integer value of the like, may be positive or negative.
     field value()-> i32{self.value}
 });

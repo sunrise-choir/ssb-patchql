@@ -2,7 +2,6 @@ pub mod author;
 pub mod db;
 pub mod input_objects;
 pub mod like;
-pub mod like_connection;
 pub mod mention;
 pub mod mention_connection;
 pub mod notification;

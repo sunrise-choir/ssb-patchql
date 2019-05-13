@@ -5,7 +5,6 @@ use diesel::dsl::sql;
 use diesel::prelude::*;
 use juniper::FieldResult;
 
-use super::like_connection::*;
 use crate::db::models::keys::*;
 use crate::db::models::votes::*;
 use crate::db::schema::keys::dsl::{id as keys_id, key as keys_key, keys as keys_table};
@@ -57,8 +56,7 @@ graphql_object!(Post: Context |&self| {
         Ok(Author{author_id})
     }
 
-    /// The likes other authors have published about this post. TODO: move this into
-    /// likes_connection
+    /// The likes other authors have published about this post.
     field likes(&executor) -> FieldResult<Vec<Like>> {
         let connection = executor.context().connection.lock()?;
 
@@ -79,10 +77,8 @@ graphql_object!(Post: Context |&self| {
 
         Ok(result)
     }
-    /// The connection to likes on this post.
-    field likes_connection(&executor, after: Option<String>, first = 10: i32) -> FieldResult<LikeConnection> {
-        //TODO: I think the LikeConnection type needs a rethink. It should probaly use cursors
-        //properly and have edges / nodes with likes.
+    /// The number of likes on this post.
+    field likes_count(&executor ) -> FieldResult<i32> {
         let connection = executor.context().connection.lock()?;
 
         let count = votes_table
@@ -92,10 +88,10 @@ graphql_object!(Post: Context |&self| {
             .filter(|vote| vote.value == 1)
             .count();
 
-        Ok(LikeConnection{count: count as i32})
+        Ok(count as i32)
     }
 
-    /// The asserted timestamp of the post. 
+    /// The asserted timestamp of the post.
     /// Asserted means that it's the time the author claims that they published the message.
     /// You can't totally trust this value, the author may have their clock set wrong, be in a
     /// different timezone, or they might be deliberately setting an incorrect published time for
@@ -110,7 +106,7 @@ graphql_object!(Post: Context |&self| {
         Ok(time)
     }
 
-    /// The received timestamp of the post. 
+    /// The received timestamp of the post.
     /// This is the time that the message was inserted into your db on this machine.
     /// You know that a message cannot have been published any later than the received timestamp.
     /// **BUT** you can't tell if the message was originally published 5 seconds or 5 years before it was
