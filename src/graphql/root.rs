@@ -76,16 +76,17 @@ graphql_object!(Query: Context |&self| {
     }
 
     /// The public key of this user's identity
-    field who_am_i(&executor) -> FieldResult<String>{
+    field who_am_i(&executor) -> FieldResult<Author>{
 
         let connection = executor.context().connection.lock()?;
 
-        let my_key = authors_table
-            .select(authors_author)
+        let author_key_id = authors_table
+            .select(authors_id)
             .filter(authors_is_me.eq(true))
-            .first::<String>(&(*connection))?;
+            .first::<Option<i32>>(&(*connection))?
+            .ok_or("No author found")?;
 
-        Ok(my_key)
+        Ok(Author{author_id: author_key_id})
     }
 
     /// Find a thread by the key string of the root message.
