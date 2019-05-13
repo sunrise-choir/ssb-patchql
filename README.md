@@ -35,6 +35,8 @@ Example Queries:
 
 ## Database schema
 
+![schema](/docs/images/ssb-patchql.jpg)
+
 ## Todos
 
 ## Development
