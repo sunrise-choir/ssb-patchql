@@ -335,13 +335,6 @@ graphql_object!(Query: Context |&self| {
 
         let mut next = 10;
 
-        if before.is_some(){
-            next = last
-        }
-        if after.is_some(){
-            next = first
-        }
-
         //TODO: Date range
         let connection = executor.context().connection.lock()?;
 
@@ -398,14 +391,14 @@ graphql_object!(Query: Context |&self| {
                 next = last;
 
                 boxed_query
-                    .filter(messages_flume_seq.gt(start_cursor))
+                    .filter(messages_flume_seq.lt(start_cursor))
             },
             (None, Some(a)) => {
                 let start_cursor = decode_cursor(&a)?;
                 next = first;
 
                 boxed_query
-                    .filter(messages_flume_seq.lt(start_cursor))
+                    .filter(messages_flume_seq.gt(start_cursor))
             },
             (None, None) => {
                 boxed_query
