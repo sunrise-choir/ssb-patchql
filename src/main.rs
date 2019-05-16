@@ -9,6 +9,7 @@ extern crate juniper_iron;
 #[macro_use]
 extern crate log as irrelevant_log;
 extern crate iron;
+extern crate staticfile;
 extern crate logger;
 #[macro_use]
 extern crate diesel_migrations;
@@ -35,7 +36,9 @@ use iron_cors::CorsMiddleware;
 use juniper_iron::{GraphQLHandler, GraphiQLHandler};
 use logger::Logger;
 use mount::Mount;
+use staticfile::Static;
 use std::sync::{Arc, Mutex};
+use std::path::Path;
 
 fn main() {
     env_logger::init();
@@ -62,10 +65,12 @@ fn main() {
 
     let locked_log_ref = Arc::new(Mutex::new(offset_log));
 
-    let connection = open_connection(&database_url);
+    let rw_connection = open_connection(&to_sqlite_uri(&database_url, "rwc"));
+    let connection = open_connection(&to_sqlite_uri(&database_url, "ro"));
 
-    db::models::authors::set_is_me(&connection, &pub_key_string).unwrap();
+    db::models::authors::set_is_me(&rw_connection, &pub_key_string).unwrap();
 
+    let rw_locked_connection_ref = Arc::new(Mutex::new(rw_connection));
     let locked_connection_ref = Arc::new(Mutex::new(connection));
 
     let mut mount = Mount::new();
@@ -75,6 +80,7 @@ fn main() {
     let graphql_endpoint = GraphQLHandler::new(
         move |_| {
             Ok(Context {
+                rw_connection: rw_locked_connection_ref.clone(),
                 connection: locked_connection_ref.clone(),
                 log: locked_log_ref.clone(),
             })
@@ -84,8 +90,9 @@ fn main() {
     );
     let graphiql_endpoint = GraphiQLHandler::new("/graphql");
 
-    mount.mount("/", graphiql_endpoint);
+    mount.mount("/graphiql", graphiql_endpoint);
     mount.mount("/graphql", graphql_endpoint);
+    mount.mount("/", Static::new(Path::new("public")));
 
     let (logger_before, logger_after) = Logger::new(None);
 
@@ -97,4 +104,8 @@ fn main() {
     let host = env::var("LISTEN").unwrap_or_else(|_| "0.0.0.0:8080".to_owned());
     println!("GraphQL server started on {}", host);
     Iron::new(chain).http(host.as_str()).unwrap();
+}
+
+fn to_sqlite_uri(path: & str, rw_mode: & str ) -> String {
+    format!("file:{}?mode={}", path, rw_mode)
 }

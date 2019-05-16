@@ -11,7 +11,7 @@ lto = true
 base64 = "0.10.0"
 bytes = "0.4.12"
 libsqlite3-sys = { version = ">=0.8.0, <0.13.0", features = ["bundled"] }
-diesel = { version = "1.4.1", features = ["sqlite"] }
+diesel = { version = "1.4.2", features = ["sqlite"] }
 diesel_migrations = "1.4.0"
 dotenv = "0.9.0"
 env_logger = "0.6.1"
@@ -28,4 +28,5 @@ mount = "0.4"
 serde = "1.0.80"
 serde_derive = "1.0.80"
 serde_json = "1.0.33"
+staticfile = "0.5.0"
 private-box = "0.5.0"

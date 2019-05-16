@@ -51,7 +51,7 @@ graphql_object!(DbMutation: Context |&self| {
         let keys = [secret_key];
 
         let context = executor.context();
-        let connection = context.connection.lock()?;
+        let connection = context.rw_connection.lock()?;
 
         //We're using Max of flume_seq.
         //When the db is empty, we'll get None.

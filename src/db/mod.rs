@@ -14,6 +14,7 @@ use schema::messages::dsl::*;
 embed_migrations!();
 
 pub struct Context {
+    pub rw_connection: Arc<Mutex<SqliteConnection>>,
     pub connection: Arc<Mutex<SqliteConnection>>,
     pub log: Arc<Mutex<OffsetLog<u32>>>,
 }

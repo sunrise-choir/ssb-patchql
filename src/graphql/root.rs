@@ -19,7 +19,7 @@ use crate::db::schema::contacts::dsl::{
 use crate::db::schema::authors::dsl::{
     author as authors_author, authors as authors_table, id as authors_id, is_me as authors_is_me,
 };
-use crate::db::schema::keys::dsl::{id as keys_id_col, key as keys_key_col, keys as keys_table};
+use crate::db::schema::keys::dsl::{id as keys_id, key as keys_key, keys as keys_table};
 use crate::db::schema::mentions::dsl::{
     link_from_key_id as mentions_link_from_key_id, link_to_author_id as mentions_link_to_author_id,
     mentions as mentions_table,
@@ -28,6 +28,7 @@ use crate::db::schema::messages::dsl::{
     author_id as messages_author_id, content_type as messages_content_type,
     flume_seq as messages_flume_seq, is_decrypted as messages_is_decrypted,
     key_id as messages_key_id, messages as messages_table,
+    content as messages_content
 };
 use crate::db::schema::reply_posts::dsl::{
     author_id as reply_posts_author_id, reply_posts as reply_posts_table,
@@ -86,10 +87,10 @@ graphql_object!(Query: Context |&self| {
 
         let thread = keys_table
             .inner_join(messages_table.on(
-                    messages_key_id.nullable().eq(keys_id_col)
+                    messages_key_id.nullable().eq(keys_id)
                     ))
             .select(messages_key_id)
-            .filter(keys_key_col.eq(root_id.clone()))
+            .filter(keys_key.eq(root_id.clone()))
             .first::<i32>(&(*connection))
             .map(|key_id|{
                 let root = Post{key_id};
@@ -295,10 +296,10 @@ graphql_object!(Query: Context |&self| {
 
         let post = keys_table
             .inner_join(messages_table.on(
-                    messages_key_id.nullable().eq(keys_id_col)
+                    messages_key_id.nullable().eq(keys_id)
                     ))
             .select(messages_key_id)
-            .filter(keys_key_col.eq(id.clone()))
+            .filter(keys_key.eq(id.clone()))
             .first::<i32>(&(*connection))
             .map(|key_id|{
                 Post{key_id}
@@ -494,7 +495,23 @@ graphql_object!(Query: Context |&self| {
     }
 
     /// Find a message by key string
-    field message(&executor, id: String) -> FieldResult<String> { // TODO: use message type. Should be a connection though so we can paginate it.
+    field message(&executor, id: String) -> FieldResult<Option<String>> { // TODO: use message type.
+        let connection = executor.context().connection.lock()?;
+        let results = messages_table
+            .inner_join(keys_table.on(
+                    messages_key_id.nullable().eq(keys_id)
+                    ))
+            .select(messages_content)
+            .filter(keys_key.eq(id))
+            .first::<Option<String>>(&(*connection))?;
+
+        Ok(results)
+    }
+
+    /// Search for links from or to a message id
+    field links(&executor, from: Option<String>, to: Option<String>) -> FieldResult<Vec<Author>>{
         Err("Not implemented")?
     }
 });
+
+
