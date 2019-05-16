@@ -232,14 +232,14 @@ graphql_object!(Query: Context |&self| {
                 next = last;
 
                 query
-                    .filter(root_posts_flume_seq.gt(start_cursor))
+                    .filter(root_posts_flume_seq.lt(start_cursor))
             },
             (None, Some(a)) => {
                 let start_cursor = decode_cursor(&a)?;
                 next = first;
 
                 query
-                    .filter(root_posts_flume_seq.lt(start_cursor))
+                    .filter(root_posts_flume_seq.gt(start_cursor))
             },
             (None, None) => {
                 query

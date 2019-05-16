@@ -4,8 +4,8 @@ version = "0.1.0"
 authors = ["Piet Geursen <pietgeursen@gmail.com>"]
 edition = "2018"
 
-[profile.release]
-lto = true
+#[profile.release]
+#lto = true
 
 [dependencies]
 base64 = "0.10.0"
