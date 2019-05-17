@@ -1,5 +1,5 @@
 # source: http://localhost:8080/graphql
-# timestamp: Mon May 13 2019 20:00:31 GMT+1200 (NZST)
+# timestamp: Fri May 17 2019 12:01:10 GMT+1200 (NZST)
 
 schema {
   query: Query
@@ -257,8 +257,11 @@ type Query {
   """
   dbCursor: String
 
-  """The public key of this user's identity"""
-  whoAmI: Author
+  """
+  The current author with publishing rights on this machine. Kinda like the "current logged
+  in user" on a sytem where you log in.
+  """
+  currentAuthor: Author
 
   """Find a thread by the key string of the root message."""
   thread(rootId: String!, orderBy: OrderBy): Thread!
@@ -361,7 +364,10 @@ type Query {
   messagesByType(messageType: String!): String!
 
   """Find a message by key string"""
-  message(id: String!): String!
+  message(id: String!): String
+
+  """Search for links from or to a message id"""
+  links(from: String, to: String): [Author!]!
 }
 
 """

@@ -64,8 +64,9 @@ graphql_object!(Query: Context |&self| {
         Ok(cursor)
     }
 
-    /// The public key of this user's identity
-    field who_am_i(&executor) -> FieldResult<Option<Author>>{
+    /// The current author with publishing rights on this machine. Kinda like the "current logged
+    /// in user" on a sytem where you log in.
+    field current_author(&executor) -> FieldResult<Option<Author>>{
 
         let connection = executor.context().connection.lock()?;
 
