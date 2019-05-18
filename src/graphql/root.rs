@@ -436,6 +436,9 @@ graphql_object!(Query: Context |&self| {
 
         let has_next_page = last_seq != 0; //TODO this hard to tell if there is a next page.
 
+
+        println!("start {}, end {}, start cursor {}, end cursor {}, num results {}", first_seq, last_seq, encode_cursor(first_seq), encode_cursor(last_seq), results.len());
+
         let page_info = PageInfo {
             start_cursor: Some(encode_cursor(first_seq)),
             end_cursor: encode_cursor(last_seq),
