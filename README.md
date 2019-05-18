@@ -1,8 +1,9 @@
+[![Build Status](https://travis-ci.org/sunrise-choir/ssb-patchql.svg?branch=master)](https://travis-ci.org/sunrise-choir/ssb-patchql)
 # ssb-patchql
 
 > (:construction: work in progress :construction: ) An example graphql api suitable for making ssb apps similar to patchwork or patchbay
 
-## Caveats
+## Heads Up:
 
 - this is still a wip, we're still learning and working out the best shape for this api to take.
 
@@ -49,7 +50,7 @@ With node / npm installed:
 
 ### Generate a new `schema.graphql`
 
-Copy `.env_example` to a file called `.env` and edit parameters appropriately for your environment.  
+Copy `.env_example` to a file called `.env` and edit parameters appropriately for your environment.
 
 Start the server using `$ cargo run`
 
