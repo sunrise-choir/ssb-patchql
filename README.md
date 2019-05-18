@@ -49,6 +49,8 @@ With node / npm installed:
 
 ### Generate a new `schema.graphql`
 
+Copy `.env_example` to a file called `.env` and edit parameters appropriately for your environment.  
+
 Start the server using `$ cargo run`
 
 and in another terminal:
