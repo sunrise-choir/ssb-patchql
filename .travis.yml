@@ -77,9 +77,9 @@ matrix:
     # - env: TARGET=thumbv7m-none-eabi
 
     # Testing other channels
-    - env: TARGET=x86_64-unknown-linux-gnu
+    - env: TARGET=x86_64-unknown-linux-musl DISABLE_TESTS=1
       rust: nightly
-    - env: TARGET=x86_64-apple-darwin
+    - env: TARGET=x86_64-apple-darwin DISABLE_TESTS=1
       os: osx
       rust: nightly
 
@@ -100,16 +100,12 @@ before_deploy:
   - sh ci/before_deploy.sh
 
 deploy:
-  # TODO update `api_key.secure`
-  # - Create a `public_repo` GitHub token. Go to: https://github.com/settings/tokens/new
-  # - Encrypt it: `travis encrypt 0123456789012345678901234567890123456789
-  # - Paste the output down here
   api_key:
     secure: "ow0H+ZuftXgXVMDop0UstYutx5sjzOTlu370HhWopAEXebMyBk8cX/oU1+N/iprSX4k7PhlC+eZHoI6isGKknd0KaZPISntmGVyAoChegacbQPyMm/RH4OJzt7f/bSsJtUTSvxJJd2TFHnykjDw1dHfmOC9YJr3yNPKOs2bUBGQzqOFEsAPOGj5dNThe8Vq8k3Ite+DF1YB+HCjgYqKtPv2LQ6qQ3p0pXK64dhgAtP/RlYU8nS1BpaAqZcGO1DrLONuamKT3yUhinctmECdmYLBe8CPQA0pyhuGsE2jJRolFV0dy5ZKQVeGlLXS627OaDJJJsohjBqsMNXvq8UCW3k1T51q2IBj+4Bmf744GVjllN/TgbRjkVC/aoMHBqg6Oy6KEMHqfe/kIxwQg49CppL4+cmwGbY7OzZ4kXjM2MFNFhhWL0NSOpe8F1NF17xB1YsjwREdZlhIM8FZRHpZZj06vhmcn2FerKJ8HcmB6Jn2+MHm4XSjBAaJ4xEdmvjw9OFHHRHPEbI1mhoEWUCtfn/PCvQz/fjhRwxdcGUqYwihVe+f1WbwLOWhRWEkiLNabe4NwGlxYKPiey7Acz2Dt16vaKDWJT0qXEZSDsCnd0mH5KwweJKk/y07Ww2/1x5wPjG1U4dg0caIWd7hy99gstN6SbmxQ/MepH38MNnZ9Kx4="
   file_glob: true
   file: $CRATE_NAME-$TRAVIS_TAG-$TARGET.*
   on:
-    # TODO Here you can pick which targets will generate binary releases
+    # Here you can pick which targets will generate binary releases
     # In this example, there are some targets that are tested using the stable
     # and nightly channels. This condition makes sure there is only one release
     # for such targets and that's generated using the stable channel
