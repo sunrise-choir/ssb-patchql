@@ -27,7 +27,9 @@
 ### Why sql?
 
 
-## [graphql schema](/schema.graphql)
+## Graphql Schema
+
+[graphql schema](/schema.graphql) lives here.
 
 Example Queries:
 

@@ -9,8 +9,8 @@ extern crate juniper_iron;
 #[macro_use]
 extern crate log as irrelevant_log;
 extern crate iron;
-extern crate staticfile;
 extern crate logger;
+extern crate staticfile;
 #[macro_use]
 extern crate diesel_migrations;
 extern crate serde;
@@ -37,8 +37,8 @@ use juniper_iron::{GraphQLHandler, GraphiQLHandler};
 use logger::Logger;
 use mount::Mount;
 use staticfile::Static;
-use std::sync::{Arc, Mutex};
 use std::path::Path;
+use std::sync::{Arc, Mutex};
 
 fn main() {
     env_logger::init();
@@ -106,6 +106,6 @@ fn main() {
     Iron::new(chain).http(host.as_str()).unwrap();
 }
 
-fn to_sqlite_uri(path: & str, rw_mode: & str ) -> String {
+fn to_sqlite_uri(path: &str, rw_mode: &str) -> String {
     format!("file:{}?mode={}", path, rw_mode)
 }

@@ -25,10 +25,9 @@ use crate::db::schema::mentions::dsl::{
     mentions as mentions_table,
 };
 use crate::db::schema::messages::dsl::{
-    author_id as messages_author_id, content_type as messages_content_type,
-    flume_seq as messages_flume_seq, is_decrypted as messages_is_decrypted,
-    key_id as messages_key_id, messages as messages_table,
-    content as messages_content
+    author_id as messages_author_id, content as messages_content,
+    content_type as messages_content_type, flume_seq as messages_flume_seq,
+    is_decrypted as messages_is_decrypted, key_id as messages_key_id, messages as messages_table,
 };
 use crate::db::schema::reply_posts::dsl::{
     author_id as reply_posts_author_id, reply_posts as reply_posts_table,
@@ -436,9 +435,6 @@ graphql_object!(Query: Context |&self| {
 
         let has_next_page = last_seq != 0; //TODO this hard to tell if there is a next page.
 
-
-        println!("start {}, end {}, start cursor {}, end cursor {}, num results {}", first_seq, last_seq, encode_cursor(first_seq), encode_cursor(last_seq), results.len());
-
         let page_info = PageInfo {
             start_cursor: Some(encode_cursor(first_seq)),
             end_cursor: encode_cursor(last_seq),
@@ -510,5 +506,3 @@ graphql_object!(Query: Context |&self| {
         Err("Not implemented")?
     }
 });
-
-
