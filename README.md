@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/sunrise-choir/ssb-patchql.svg?branch=master)](https://travis-ci.org/sunrise-choir/ssb-patchql)
+[![Build status](https://ci.appveyor.com/api/projects/status/w1c7n87463g99vls/branch/master?svg=true)](https://ci.appveyor.com/project/pietgeursen/ssb-patchql/branch/master)
 # ssb-patchql
 
 > (:construction: work in progress :construction: ) An example graphql api suitable for making ssb apps similar to patchwork or patchbay
