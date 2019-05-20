@@ -39,6 +39,9 @@ pub fn set_is_me(connection: &SqliteConnection, author: &str) -> Result<(), Erro
         .filter(authors_is_me.is_not_null())
         .execute(&(*connection))?;
 
+    //Create if the author doesn't exist yet (happens on first run before processing any offset log)
+    find_or_create_author(connection, author)?;
+
     diesel::update(authors_table)
         .set(authors_is_me.eq(true))
         .filter(authors_author.eq(author))
