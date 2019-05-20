@@ -37,11 +37,10 @@ graphql_object!(DbMutation: Context |&self| {
     /// is a major pain point in the javascript flume-db implementation that we're avoiding by
     /// doing this.
     field process(&executor, chunk_size = 100: i32) -> FieldResult<ProcessResults> {
-        //TODO: get the secret key from env
         let secret_key_string =
             env::var("SSB_SECRET_KEY").expect("SSB_SECRET_KEY environment variable must be set");
 
-        let secret_key_bytes = base64::decode(&secret_key_string)
+        let secret_key_bytes = base64::decode(&secret_key_string.trim_end_matches(".ed25519"))
             .unwrap_or(vec![0u8]);
 
         let secret_key = SecretKey::from_slice(&secret_key_bytes).unwrap_or_else(|| {
