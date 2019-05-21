@@ -290,7 +290,7 @@ graphql_object!(Query: Context |&self| {
     }
 
     /// Find a post by key string.
-    field post(&executor, id: String ) -> FieldResult<Post> {
+    field post(&executor, id: String ) -> FieldResult<Option<Post>> {
         let connection = executor.context().connection.lock()?;
 
         let post = keys_table
@@ -301,8 +301,9 @@ graphql_object!(Query: Context |&self| {
             .filter(keys_key.eq(id.clone()))
             .first::<i32>(&(*connection))
             .map(|key_id|{
-                Post{key_id}
-            })?;
+                Some(Post{key_id})
+            })
+            .unwrap_or(None);
 
         Ok(post)
     }
