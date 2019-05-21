@@ -1,4 +1,3 @@
-use std::time;
 use super::page_info::PageInfo;
 use crate::lib::cursor::*;
 use diesel::dsl::max;
@@ -264,23 +263,22 @@ graphql_object!(Query: Context |&self| {
             .map(|(key_id, _)| *key_id)
             .collect::<Vec<i32>>();
 
-        let first_seq: i64 = results
+        let start_cursor = results
             .first()
             .map(|(_, seq)| *seq)
-            .ok_or("No results found")?;
+            .map(encode_cursor);
 
-        let last_seq: i64 = results
+        let end_cursor = results
             .iter()
             .last()
             .map(|(_, seq)| *seq)
-            .ok_or("No results found")?;
+            .map(encode_cursor);
 
-        let has_next_page = last_seq != 0; //TODO this hard to tell if there is a next page.
 
         let page_info = PageInfo {
-            start_cursor: Some(encode_cursor(first_seq)),
-            end_cursor: encode_cursor(last_seq),
-            has_next_page,
+            start_cursor,
+            end_cursor,
+            has_next_page: true, //TODO 
             has_previous_page: true //TODO make this work.
         };
 
@@ -421,25 +419,24 @@ graphql_object!(Query: Context |&self| {
             .map(|(key_id, _)| *key_id)
             .collect::<Vec<i32>>();
 
-        let first_seq: i64 = results
+        let start_cursor = results
             .first()
-            .map(|(_, seq)| *seq)
-            .ok_or("No results found")?
-            .ok_or("No results found")?;
+            .map(|(_, seq)| {
+                seq.unwrap() //If a message doesn't have a sequence something has gone terribly wrong
+            })
+            .map(encode_cursor);
 
-        let last_seq: i64 = results
+        let end_cursor = results
             .iter()
             .last()
-            .map(|(_, seq)| *seq)
-            .ok_or("No results found")?
-            .ok_or("No results found")?;
+            .map(|(_, seq)| seq.unwrap())
+            .map(encode_cursor);
 
-        let has_next_page = last_seq != 0; //TODO this hard to tell if there is a next page.
 
         let page_info = PageInfo {
-            start_cursor: Some(encode_cursor(first_seq)),
-            end_cursor: encode_cursor(last_seq),
-            has_next_page,
+            start_cursor,
+            end_cursor,
+            has_next_page: true, //TODO 
             has_previous_page: true //TODO make this work.
         };
 
