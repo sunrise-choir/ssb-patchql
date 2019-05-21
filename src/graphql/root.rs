@@ -81,7 +81,7 @@ graphql_object!(Query: Context |&self| {
     }
 
     /// Find a thread by the key string of the root message.
-    field thread(&executor, root_id: String, order_by = (OrderBy::Received): OrderBy) -> FieldResult<Thread> {
+    field thread(&executor, root_id: String, order_by = (OrderBy::Received): OrderBy) -> FieldResult<Option<Thread>> {
 
         let connection = executor.context().connection.lock()?;
 
@@ -94,8 +94,9 @@ graphql_object!(Query: Context |&self| {
             .first::<i32>(&(*connection))
             .map(|key_id|{
                 let root = Post{key_id};
-                Thread{root}
-            })?;
+                Some(Thread{root})
+            })
+            .unwrap_or(None);
 
         Ok(thread)
     }
@@ -449,16 +450,18 @@ graphql_object!(Query: Context |&self| {
     }
 
     /// Find an author by their public key string.
-    field author(&executor, id: String) -> FieldResult<Author>{
+    field author(&executor, id: String) -> FieldResult<Option<Author>>{
         let connection = executor.context().connection.lock()?;
 
-        let author_key_id = authors_table
+        let author = authors_table
             .select(authors_id)
             .filter(authors_author.eq(id))
-            .first::<Option<i32>>(&(*connection))?
-            .ok_or("No author found")?;
-
-        Ok(Author{author_id: author_key_id})
+            .first::<Option<i32>>(&(*connection))
+            .map(|author_id|{
+                Some(Author{author_id: author_id.unwrap()})
+            })
+            .unwrap_or(None);
+        Ok(author)
     }
 
     /// Search for an author by a query string. Will search names and optionally descriptions too.
