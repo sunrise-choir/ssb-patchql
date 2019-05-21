@@ -36,8 +36,8 @@ use iron_cors::CorsMiddleware;
 use juniper_iron::{GraphQLHandler, GraphiQLHandler};
 use logger::Logger;
 use mount::Mount;
-use staticfile::Static;
-use std::path::Path;
+//use staticfile::Static;
+//use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 fn main() {

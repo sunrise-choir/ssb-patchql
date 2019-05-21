@@ -24,8 +24,12 @@
 
 ### Why the `process` mutation?
 
+This db will lag behind the offset log and needs calls to `process` to bring the db up to date. At first this might seem annoying and that the db should do this automatically. But this is a conscious design decision to give the app control of when cpu is used. This is very important on resource constrained devices, or even just when starting up the app. This is a major pain point in the javascript flume-db implementation that we're avoiding by doing this.
+
 ### Why sql?
 
+- SSB data is highly relational. It suits a relational db very well.
+- Each person has a db that only contains data from their own social network (and not all the data of the entire network like in a centralised system) we don't have to be able to scale to millions or billions of users.
 
 ## Graphql Schema
 
