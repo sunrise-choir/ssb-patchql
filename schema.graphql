@@ -1,5 +1,5 @@
 # source: http://localhost:8080/graphql
-# timestamp: Fri May 17 2019 12:01:10 GMT+1200 (NZST)
+# timestamp: Tue May 21 2019 14:42:25 GMT+1200 (NZST)
 
 schema {
   query: Query
@@ -118,7 +118,7 @@ type PageInfo {
   hasPreviousPage: Boolean!
 
   """The cursor for the last item in the page."""
-  endCursor: String!
+  endCursor: String
 
   """The cursor for the first item in the page."""
   startCursor: String
