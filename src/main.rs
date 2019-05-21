@@ -90,9 +90,9 @@ fn main() {
     );
     let graphiql_endpoint = GraphiQLHandler::new("/graphql");
 
-    mount.mount("/graphiql", graphiql_endpoint);
+    mount.mount("/", graphiql_endpoint);
     mount.mount("/graphql", graphql_endpoint);
-    mount.mount("/", Static::new(Path::new("public")));
+    //mount.mount("/", Static::new(Path::new("public")));
 
     let (logger_before, logger_after) = Logger::new(None);
 
