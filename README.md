@@ -54,14 +54,14 @@ The absolute or relative path to the sqlite database. If it doesn't exist it wil
 
 The absolute or relative path to the offset log. Typically lives in `~/.ssb/flume/log.offset`
 
+### `SSB_PUB_KEY` (required)
+
+The `id` field from `~/.ssb/secret` including the '.ed25519' suffix
+
 ### `SSB_SECRET_KEY`
 
 Not strictly required, it will run without a secret key. But it can't decrypt private messages.
 The `private` field from `~/.ssb/secret` including the '.ed25519' suffix
-
-### `SSB_PUB_KEY` (required)
-
-The `id` field from `~/.ssb/secret` including the '.ed25519' suffix
 
 ### `LISTEN`
 
