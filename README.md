@@ -71,7 +71,7 @@ The host and port to bind to. eg:
 - `LISTEN=localhost:9967` (use some other port)
 - `LISTEN=0.0.0.0:8080` (expose to more than just localhost. **Careful**: People could read your private messages.)
 
-### RUST_LOG
+### `RUST_LOG`
 
 logging level. eg:
 
