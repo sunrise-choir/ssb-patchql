@@ -71,6 +71,12 @@ The host and port to bind to. eg:
 - `LISTEN=localhost:9967` (use some other port)
 - `LISTEN=0.0.0.0:8080` (expose to more than just localhost)
 
+### RUST_LOG
+
+logging level. eg:
+
+- `RUST_LOG=info` (will log server response times, useful for checking performance)
+
 ## Database schema
 
 ![schema](/docs/images/ssb-patchql.jpg)
