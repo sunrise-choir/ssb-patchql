@@ -1,6 +1,6 @@
 [package]
 name = "ssb-patchql"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Piet Geursen <pietgeursen@gmail.com>"]
 edition = "2018"
 
