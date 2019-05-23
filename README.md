@@ -6,7 +6,7 @@
 
 ## Heads Up:
 
-- this is still a wip, we're still learning and working out the best shape for this api to take.
+- this is still a wip, we're still learning and working out the best shape for this api to take. The API **will change**.
 
 ## Intention
 
@@ -24,7 +24,7 @@
 
 ### Why the `process` mutation?
 
-This db will lag behind the offset log and needs calls to `process` to bring the db up to date. At first this might seem annoying and that the db should do this automatically. But this is a conscious design decision to give the app control of when cpu is used. This is very important on resource constrained devices, or even just when starting up the app. This is a major pain point in the javascript flume-db implementation that we're avoiding by doing this.
+This db will lag behind the offset log and needs calls to `process` to bring the db up to date. At first this might seem annoying and that the db should do this automatically. But this is a conscious design decision to give the app control of when cpu is used. This is important on resource constrained devices, or even just when starting up the app. This is a major pain point in the javascript flume-db implementation that we're learning from.
 
 ### Why sql?
 
@@ -40,6 +40,36 @@ Example Queries:
 ```graphql
 
 ```
+
+## Environment Variables
+
+Note, there's an `.env_example` file in the root of the repo you can use as a starting point. Copy it to a file called `.env`.
+
+### `DATABASE_URL` (required)
+
+This is poorly named and will be changed to DATABASE_PATH.
+The absolute or relative path to the sqlite database. If it doesn't exist it will be created.
+
+### `OFFSET_LOG_PATH` (required)
+
+The absolute or relative path to the offset log. Typically lives in `~/.ssb/flume/log.offset`
+
+### `SSB_SECRET_KEY`
+
+Not strictly required, it will run without a secret key. But it can't decrypt private messages.
+The `private` field from `~/.ssb/secret` including the '.ed25519' suffix
+
+### `SSB_PUB_KEY` (required)
+
+The `id` field from `~/.ssb/secret` including the '.ed25519' suffix
+
+### `LISTEN`
+
+The host and port to bind to. eg:
+
+- `LISTEN=localhost:8080` (default)
+- `LISTEN=localhost:9967` (use some other port)
+- `LISTEN=0.0.0.0:8080` (expose to more than just localhost)
 
 ## Database schema
 
