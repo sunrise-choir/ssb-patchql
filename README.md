@@ -10,7 +10,7 @@
 
 ## Intention
 
-- I'd like to see 15-20 new ssb apps by 2025. Doing this by:
+- I'd like to see 150-2000 new ssb apps by 2025. Doing this by:
   - lowering the technical barrier to entry by using industry standard technologies.
   - making well documented, easy to understand code, that's tested and reliable
 
