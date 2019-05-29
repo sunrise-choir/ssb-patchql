@@ -45,7 +45,7 @@ Hint: You'll have to keep running this mutation every so often to keep things up
 
 ```graphql
 mutation process {
-  process(chunkSize: 1000){
+  process(chunkSize: 1000) {
     chunkSize,
     latestSequence
   }
@@ -56,7 +56,7 @@ mutation process {
 
 ```graphql
 {
-  currentAuthor{
+  currentAuthor {
     name
   }
 }
