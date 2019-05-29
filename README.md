@@ -35,11 +35,12 @@ This db will lag behind the offset log and needs calls to `process` to bring the
 
 [graphql schema](/schema.graphql) lives here.
 
-Example Queries:
+## Example Queries:
 
 ### `process` 10000 messages from your offset file into your sqlite file.
 
 Hint: If you're just getting started, set the `chunkSize` to a really large number like 10 million. You'll have to wait a few minutes for it to process everything.
+
 Hint: You'll have to keep running this mutation every so often to keep things up to date.
 
 ```graphql
