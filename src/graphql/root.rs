@@ -1,5 +1,5 @@
 use super::page_info::PageInfo;
-use crate::lib::cursor::*;
+use crate::cursor::*;
 use diesel::dsl::max;
 use diesel::dsl::sql;
 use diesel::prelude::*;

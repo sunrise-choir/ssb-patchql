@@ -6,7 +6,7 @@ use crate::db::schema::contacts::dsl::{
     author_id, contact_author_id, contacts, is_decrypted as is_decrypted_column, state,
 };
 use crate::db::SqliteConnection;
-use crate::lib::*;
+use crate::ssb_message::*;
 
 use serde_json::Value;
 pub fn insert_or_update_contacts(

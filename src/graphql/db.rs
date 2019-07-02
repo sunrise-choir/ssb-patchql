@@ -2,13 +2,10 @@ use crate::db::*;
 use flumedb::BidirIterator;
 use itertools::Itertools;
 use juniper::FieldResult;
-use std::env;
 
 use crate::db::models::append_item;
 use diesel::prelude::*;
 use diesel::result::Error;
-
-use private_box::SecretKey;
 
 #[derive(Default)]
 pub struct DbMutation {}
@@ -37,17 +34,6 @@ graphql_object!(DbMutation: Context |&self| {
     /// is a major pain point in the javascript flume-db implementation that we're avoiding by
     /// doing this.
     field process(&executor, chunk_size = 100: i32) -> FieldResult<ProcessResults> {
-        let secret_key_string =
-            env::var("SSB_SECRET_KEY").expect("SSB_SECRET_KEY environment variable must be set");
-
-        let secret_key_bytes = base64::decode(&secret_key_string.trim_end_matches(".ed25519"))
-            .unwrap_or(vec![0u8]);
-
-        let secret_key = SecretKey::from_slice(&secret_key_bytes).unwrap_or_else(|| {
-            warn!("Could not parse valid ssb-secret for decryption. Messages will not be decrypted");
-            SecretKey::from_slice(&[0; 64]).unwrap()
-        });
-        let keys = [secret_key];
 
         let context = executor.context();
         let connection = context.rw_connection.lock()?;
@@ -81,7 +67,7 @@ graphql_object!(DbMutation: Context |&self| {
                 connection.transaction::<_, Error, _>(||{
                     chunk
                         .for_each(|log_entry|{
-                            append_item(&(*connection), &keys, log_entry.offset, &log_entry.data).unwrap();
+                            append_item(&(*connection), &context.keys, log_entry.offset, &log_entry.data).unwrap();
                         });
                     Ok(())
                 }).unwrap();

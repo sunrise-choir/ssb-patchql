@@ -6,7 +6,7 @@ use crate::db::schema::votes::dsl::{
     votes as votes_table,
 };
 use crate::db::SqliteConnection;
-use crate::lib::*;
+use crate::ssb_message::*;
 use diesel::prelude::*;
 use diesel::replace_into;
 use serde_json::Value;

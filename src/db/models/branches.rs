@@ -3,7 +3,7 @@ use crate::db::schema::branches::dsl::{
     branches as branches_table, link_from_key_id, link_to_key_id,
 };
 use crate::db::SqliteConnection;
-use crate::lib::*;
+use crate::ssb_message::*;
 use diesel::insert_into;
 use diesel::prelude::*;
 use serde_json::Value;

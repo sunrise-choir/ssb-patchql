@@ -1,28 +1,21 @@
-#[macro_use]
 extern crate diesel;
 extern crate dotenv;
 extern crate env_logger;
 extern crate juniper_codegen;
-#[macro_use]
 extern crate juniper;
 extern crate juniper_iron;
-#[macro_use]
 extern crate log as irrelevant_log;
 extern crate iron;
 extern crate logger;
 extern crate staticfile;
-#[macro_use]
 extern crate diesel_migrations;
 extern crate serde;
-#[macro_use]
 extern crate serde_derive;
 extern crate iron_cors;
 extern crate mount;
 extern crate serde_json;
 
-mod db;
-mod graphql;
-mod lib;
+use ssb_patchql::{db, graphql};
 
 use dotenv::dotenv;
 use std::env;
@@ -45,7 +38,6 @@ fn main() {
     let mut mount = Mount::new();
     let middleware = CorsMiddleware::with_allow_any();
 
-    println!("creating a new gql context");
     let offset_log_path =
         env::var("OFFSET_LOG_PATH").expect("OFFSET_LOG_PATH environment variable must be set");
 
@@ -53,7 +45,11 @@ fn main() {
 
     let pub_key_string =
         env::var("SSB_PUB_KEY").expect("SSB_PUB_KEY environment variable must be set");
-    let context = Context::new(offset_log_path, database_url, pub_key_string);
+
+    let secret_key_string =
+        env::var("SSB_SECRET_KEY").expect("SSB_SECRET_KEY environment variable must be set");
+
+    let context = Context::new(offset_log_path, database_url, pub_key_string, secret_key_string);
 
     let graphql_endpoint =
         GraphQLHandler::new(move |_| Ok(context.clone()), Query, DbMutation::default());

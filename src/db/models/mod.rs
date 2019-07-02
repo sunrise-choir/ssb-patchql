@@ -13,7 +13,7 @@ pub mod texts;
 pub mod votes;
 
 use crate::db::{Error, SqliteConnection};
-use crate::lib::*;
+use crate::ssb_message::*;
 use base64::decode;
 use flumedb::flume_view::Sequence as FlumeSequence;
 use private_box::SecretKey;
@@ -173,5 +173,33 @@ mod tests {
             assert_eq!(results[0].key, "piet");
             Ok(())
         })
+    }
+}
+
+pub fn find_values_in_object_by_key<'a>(
+    obj: &'a serde_json::Value,
+    key: &str,
+    values: &mut Vec<&'a serde_json::Value>,
+) {
+    if let Some(val) = obj.get(key) {
+        values.push(val)
+    }
+
+    match obj {
+        Value::Array(arr) => {
+            for val in arr {
+                find_values_in_object_by_key(val, key, values);
+            }
+        }
+        Value::Object(kv) => {
+            for val in kv.values() {
+                match val {
+                    Value::Object(_) => find_values_in_object_by_key(val, key, values),
+                    Value::Array(_) => find_values_in_object_by_key(val, key, values),
+                    _ => (),
+                }
+            }
+        }
+        _ => (),
     }
 }

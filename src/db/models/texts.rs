@@ -1,5 +1,5 @@
 use crate::db::SqliteConnection;
-use crate::lib::*;
+use crate::ssb_message::*;
 use diesel::insert_into;
 use diesel::prelude::*;
 use serde_json::Value;

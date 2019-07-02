@@ -5,6 +5,7 @@ use diesel::sqlite::SqliteConnection;
 use diesel_migrations::any_pending_migrations;
 use flumedb::offset_log::OffsetLog;
 use std::sync::{Arc, Mutex};
+use private_box::SecretKey;
 
 pub mod models;
 pub mod schema;
@@ -18,10 +19,11 @@ pub struct Context {
     pub rw_connection: Arc<Mutex<SqliteConnection>>,
     pub connection: Arc<Mutex<SqliteConnection>>,
     pub log: Arc<Mutex<OffsetLog<u32>>>,
+    pub keys: Vec<SecretKey>,
 }
 
 impl Context {
-    pub fn new(offset_log_path: String, database_path: String, pub_key_string: String) -> Context {
+    pub fn new(offset_log_path: String, database_path: String, pub_key_string: String, secret_key_string: String) -> Context {
         let offset_log = match OffsetLog::open_read_only(&offset_log_path) {
             Ok(log) => log,
             Err(_) => {
@@ -39,10 +41,21 @@ impl Context {
         let rw_locked_connection_ref = Arc::new(Mutex::new(rw_connection));
         let locked_connection_ref = Arc::new(Mutex::new(connection));
 
+        let secret_key_bytes = base64::decode(&secret_key_string.trim_end_matches(".ed25519"))
+            .unwrap_or(vec![0u8]);
+
+        let secret_key = SecretKey::from_slice(&secret_key_bytes).unwrap_or_else(|| {
+            warn!("Could not parse valid ssb-secret for decryption. Messages will not be decrypted");
+            SecretKey::from_slice(&[0; 64]).unwrap()
+        });
+
+        let keys = vec![secret_key];
+
         Context {
             rw_connection: rw_locked_connection_ref.clone(),
             connection: locked_connection_ref.clone(),
             log: locked_log_ref.clone(),
+            keys
         }
     }
 }

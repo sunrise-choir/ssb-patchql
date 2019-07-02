@@ -1,7 +1,7 @@
 use super::page_info::PageInfo;
 use super::post::Post;
 use crate::db::Context;
-use crate::lib::cursor::*;
+use crate::cursor::*;
 use diesel::prelude::*;
 use juniper::FieldResult;
 

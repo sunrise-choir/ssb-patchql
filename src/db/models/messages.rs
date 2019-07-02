@@ -1,6 +1,6 @@
 use super::keys::*;
 use crate::db::{Error, SqliteConnection};
-use crate::lib::SsbMessage;
+use crate::ssb_message::*;
 use serde_json::Value;
 
 use super::keys::find_or_create_key;

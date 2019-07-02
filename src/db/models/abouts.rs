@@ -7,7 +7,7 @@ use crate::db::schema::messages::dsl::{
     key_id as messages_key_id, messages as messages_table,
 };
 use crate::db::SqliteConnection;
-use crate::lib::*;
+use crate::ssb_message::*;
 use diesel::dsl::sql;
 use diesel::insert_into;
 use diesel::prelude::*;
