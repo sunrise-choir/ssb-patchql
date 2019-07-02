@@ -319,9 +319,9 @@ graphql_object!(Query: Context |&self| {
         /// Use a cursor string to get results after the cursor
         after: Option<String>,
         /// Limit the number or results to get.
-        first = 10: i32,
+        first = (None): Option<i32>,
         /// Limit the number or results to get.
-        last = 10: i32,
+        last = (Some(10)): Option<i32>,
         /// Find posts that match the query string.
         query: Option<String>,
         /// Find public, private or all threads.
@@ -386,27 +386,38 @@ graphql_object!(Query: Context |&self| {
                     .filter(messages_author_id.nullable().eq_any(author_key_ids));
         }
 
-        boxed_query = match (&before, &after) {
-            (Some(b), None) => {
+        boxed_query = match (&before, &after, &first, &last) {
+            (Some(b), None, _, Some(l)) => {
                 let start_cursor = decode_cursor(&b)?;
-                next = last;
+                next = *l;
 
                 boxed_query
                     .filter(messages_flume_seq.lt(start_cursor))
             },
-            (None, Some(a)) => {
+            (None, Some(a), Some(f), _) => {
                 let start_cursor = decode_cursor(&a)?;
-                next = first;
+                next = *f;
 
                 boxed_query
                     .filter(messages_flume_seq.gt(start_cursor))
             },
-            (None, None) => {
+            (None, None, Some(f), None) => {
+                next = *f;
                 boxed_query
             },
-            (Some(_), Some(_)) => {
+            (None, None, None, Some(l)) => {
+                next = *l;
+                boxed_query
+            },
+            (_,_ , Some(_), Some(_)) => {
+                Err("first and last can't be set at the same time.")?
+            }
+            (Some(_), Some(_), _, _) => {
                 Err("Before and After can't be set at the same time.")?
             }
+            (_, _, _, _) => {
+                Err("unsupported combination of before, after, first and last")?
+            },
         };
 
         let results = boxed_query
