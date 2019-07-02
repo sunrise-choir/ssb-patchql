@@ -13,12 +13,43 @@ use schema::messages::dsl::*;
 
 embed_migrations!();
 
+#[derive(Clone)]
 pub struct Context {
     pub rw_connection: Arc<Mutex<SqliteConnection>>,
     pub connection: Arc<Mutex<SqliteConnection>>,
     pub log: Arc<Mutex<OffsetLog<u32>>>,
 }
 
+impl Context {
+    pub fn new(offset_log_path: String, database_path: String, pub_key_string: String) -> Context {
+        let offset_log = match OffsetLog::open_read_only(&offset_log_path) {
+            Ok(log) => log,
+            Err(_) => {
+                panic!("failed to open offset log at {}", offset_log_path);
+            }
+        };
+
+        let locked_log_ref = Arc::new(Mutex::new(offset_log));
+
+        let rw_connection = open_connection(&to_sqlite_uri(&database_path, "rwc"));
+        let connection = open_connection(&to_sqlite_uri(&database_path, "ro"));
+
+        models::authors::set_is_me(&rw_connection, &pub_key_string).unwrap();
+
+        let rw_locked_connection_ref = Arc::new(Mutex::new(rw_connection));
+        let locked_connection_ref = Arc::new(Mutex::new(connection));
+
+        Context {
+            rw_connection: rw_locked_connection_ref.clone(),
+            connection: locked_connection_ref.clone(),
+            log: locked_log_ref.clone(),
+        }
+    }
+}
+
+fn to_sqlite_uri(path: &str, rw_mode: &str) -> String {
+    format!("file:{}?mode={}", path, rw_mode)
+}
 // To make our context usable by Juniper, we have to implement a marker trait.
 impl juniper::Context for Context {}
 

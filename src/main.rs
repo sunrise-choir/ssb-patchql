@@ -25,7 +25,6 @@ mod graphql;
 mod lib;
 
 use dotenv::dotenv;
-use flumedb::offset_log::OffsetLog;
 use std::env;
 
 use db::*;
@@ -38,12 +37,15 @@ use logger::Logger;
 use mount::Mount;
 //use staticfile::Static;
 //use std::path::Path;
-use std::sync::{Arc, Mutex};
 
 fn main() {
     env_logger::init();
     dotenv().ok();
 
+    let mut mount = Mount::new();
+    let middleware = CorsMiddleware::with_allow_any();
+
+    println!("creating a new gql context");
     let offset_log_path =
         env::var("OFFSET_LOG_PATH").expect("OFFSET_LOG_PATH environment variable must be set");
 
@@ -51,43 +53,10 @@ fn main() {
 
     let pub_key_string =
         env::var("SSB_PUB_KEY").expect("SSB_PUB_KEY environment variable must be set");
+    let context = Context::new(offset_log_path, database_url, pub_key_string);
 
-    let offset_log = match OffsetLog::open_read_only(&offset_log_path) {
-        Ok(log) => log,
-        Err(_) => {
-            eprintln!(
-                "Failed to open offset log file at path: {}",
-                &offset_log_path
-            );
-            return;
-        }
-    };
-
-    let locked_log_ref = Arc::new(Mutex::new(offset_log));
-
-    let rw_connection = open_connection(&to_sqlite_uri(&database_url, "rwc"));
-    let connection = open_connection(&to_sqlite_uri(&database_url, "ro"));
-
-    db::models::authors::set_is_me(&rw_connection, &pub_key_string).unwrap();
-
-    let rw_locked_connection_ref = Arc::new(Mutex::new(rw_connection));
-    let locked_connection_ref = Arc::new(Mutex::new(connection));
-
-    let mut mount = Mount::new();
-
-    let middleware = CorsMiddleware::with_allow_any();
-
-    let graphql_endpoint = GraphQLHandler::new(
-        move |_| {
-            Ok(Context {
-                rw_connection: rw_locked_connection_ref.clone(),
-                connection: locked_connection_ref.clone(),
-                log: locked_log_ref.clone(),
-            })
-        },
-        Query,
-        DbMutation::default(),
-    );
+    let graphql_endpoint =
+        GraphQLHandler::new(move |_| Ok(context.clone()), Query, DbMutation::default());
     let graphiql_endpoint = GraphiQLHandler::new("/graphql");
 
     mount.mount("/", graphiql_endpoint);
@@ -104,8 +73,4 @@ fn main() {
     let host = env::var("LISTEN").unwrap_or_else(|_| "localhost:8080".to_owned());
     println!("GraphQL server started on {}", host);
     Iron::new(chain).http(host.as_str()).unwrap();
-}
-
-fn to_sqlite_uri(path: &str, rw_mode: &str) -> String {
-    format!("file:{}?mode={}", path, rw_mode)
 }
