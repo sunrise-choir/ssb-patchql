@@ -919,7 +919,7 @@ dependencies = [
 
 [[package]]
 name = "ssb-patchql"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "bytes 0.4.12 (registry+https://github.com/rust-lang/crates.io-index)",
