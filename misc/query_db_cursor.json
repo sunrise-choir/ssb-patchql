@@ -1,1 +1,1 @@
-{"jsonrpc": "2.0", "method": "query", "params": ["{dbCursor}"], "id": 1}
+{"jsonrpc": "2.0", "method": "query", "params": { "query": "{dbCursor}" }, "id": 1}
