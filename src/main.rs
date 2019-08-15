@@ -25,7 +25,7 @@ mod graphql;
 mod lib;
 
 use dotenv::dotenv;
-use flumedb::offset_log::OffsetLog;
+use flumedb::go_offset_log::GoOffsetLog;
 use std::env;
 
 use db::*;
@@ -52,7 +52,7 @@ fn main() {
     let pub_key_string =
         env::var("SSB_PUB_KEY").expect("SSB_PUB_KEY environment variable must be set");
 
-    let offset_log = match OffsetLog::open_read_only(&offset_log_path) {
+    let offset_log = match GoOffsetLog::open_read_only(&offset_log_path) {
         Ok(log) => log,
         Err(_) => {
             eprintln!(

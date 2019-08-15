@@ -1,5 +1,4 @@
 use crate::db::*;
-use flumedb::BidirIterator;
 use itertools::Itertools;
 use juniper::FieldResult;
 use std::env;
@@ -69,7 +68,6 @@ graphql_object!(DbMutation: Context |&self| {
         let starting_offset = max_seq.unwrap_or(0);
 
         log.iter_at_offset(starting_offset)
-            .forward()
             .skip(num_to_skip)
             .take(chunk_size as usize)
             .chunks(10000)
