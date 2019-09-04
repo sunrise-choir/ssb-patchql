@@ -1,5 +1,5 @@
 # source: http://localhost:8080/graphql
-# timestamp: Tue May 21 2019 14:42:25 GMT+1200 (NZST)
+# timestamp: Wed Sep 04 2019 21:57:22 GMT+1200 (New Zealand Standard Time)
 
 schema {
   query: Query
@@ -264,7 +264,7 @@ type Query {
   currentAuthor: Author
 
   """Find a thread by the key string of the root message."""
-  thread(rootId: String!, orderBy: OrderBy): Thread!
+  thread(rootId: String!, orderBy: OrderBy): Thread
 
   """
   Search for threads that match _any_ of the selectors.
@@ -313,7 +313,7 @@ type Query {
   ): ThreadConnection!
 
   """Find a post by key string."""
-  post(id: String!): Post!
+  post(id: String!): Post
 
   """
   Search for posts that match certain filters.
@@ -328,7 +328,7 @@ type Query {
     after: String
 
     """Limit the number or results to get."""
-    first: Int = 10
+    first: Int = null
 
     """Limit the number or results to get."""
     last: Int = 10
@@ -350,7 +350,7 @@ type Query {
   ): PostConnection!
 
   """Find an author by their public key string."""
-  author(id: String!): Author!
+  author(id: String!): Author
 
   """
   Search for an author by a query string. Will search names and optionally descriptions too.
