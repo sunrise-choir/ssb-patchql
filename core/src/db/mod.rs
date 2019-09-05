@@ -43,7 +43,6 @@ impl Context {
 
         let manager = ConnectionManager::new(&to_sqlite_uri(&database_path, "ro"));
         let pool = Pool::builder().build(manager).unwrap();
-        //let connection = open_connection(&to_sqlite_uri(&database_path, "ro"));
 
         models::authors::set_is_me(&rw_connection, &pub_key_string).unwrap();
 

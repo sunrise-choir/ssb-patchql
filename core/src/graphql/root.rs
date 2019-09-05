@@ -104,16 +104,19 @@ graphql_object!(Query: Context |&self| {
     /// Search for threads that match _any_ of the selectors.
     /// Eg. if `roots_authored_by` **and** `has_replies_authored_by` are used, you will get threads
     /// where _either_ is true. The selectors are logically OR'd, **not** AND'd.
+    ///
+    /// Note that when not passing any options for `before`, `after`, `first` and `last`, the
+    /// default is to give you the most recent threads with a default `last` value of 10 threads.
     field threads(
         &executor,
-        /// Use a cursor string to get results before the cursor
+        /// Use a cursor string to get results before the cursor (backwards pagination)
         before: Option<String>,
-        /// Use a cursor string to get results after the cursor
+        /// Use a cursor string to get results after the cursor (forwards pagination)
         after: Option<String>,
-        /// Limit the number or results to get.
-        last = 10: i32,
-        /// Limit the number or results to get.
-        first = 10: i32,
+        /// Limit the number or results to get when using `before`.
+        last = (None): Option<i32>,
+        /// Limit the number or results to get when using `after`.
+        first = (None): Option<i32>,
         /// Find public, private or all threads.
         privacy = (Privacy::Public): Privacy,
         /// Include threads whose root message is authored by one of the provided authors
@@ -227,31 +230,46 @@ graphql_object!(Query: Context |&self| {
             },
         };
 
-        query = match (&before, &after) {
-            (Some(b), None) => {
+        query = match (&before, &after, last, first) {
+            (Some(b), None, Some(l), None ) => {
                 let start_cursor = decode_cursor(&b)?;
-                next = last;
+                next = l;
 
                 query
                     .filter(root_posts_flume_seq.lt(start_cursor))
+                    .order(root_posts_flume_seq.desc())
             },
-            (None, Some(a)) => {
+            (None, Some(a), None, Some(f)) => {
                 let start_cursor = decode_cursor(&a)?;
-                next = first;
+                next = f;
 
                 query
                     .filter(root_posts_flume_seq.gt(start_cursor))
+                    .order(root_posts_flume_seq.asc())
             },
-            (None, None) => {
+            (None, None, Some(l), _) => {
+                next = l;
                 query
+                    .order(root_posts_flume_seq.desc())
             },
-            (Some(_), Some(_)) => {
+            (None, None, None, Some(f)) => {
+                next = f;
+                query
+                    .order(root_posts_flume_seq.asc())
+            },
+            (None, None, None, None) => {
+                query
+                    .order(root_posts_flume_seq.desc())
+            },
+            (Some(_), Some(_), _, _) => {
                 Err("Before and After can't be set at the same time.")?
+            }
+            _ => {
+                Err("Incorrect combination or before, after, first and last")?
             }
         };
 
         let query = query
-            .order(root_posts_flume_seq.desc())
             .limit(next as i64)
             .distinct();
 
@@ -321,7 +339,7 @@ graphql_object!(Query: Context |&self| {
         /// Limit the number or results to get.
         first = (None): Option<i32>,
         /// Limit the number or results to get.
-        last = (Some(10)): Option<i32>,
+        last = (None): Option<i32>,
         /// Find posts that match the query string.
         query: Option<String>,
         /// Find public, private or all threads.
@@ -393,6 +411,7 @@ graphql_object!(Query: Context |&self| {
 
                 boxed_query
                     .filter(messages_flume_seq.lt(start_cursor))
+                    .order(messages_flume_seq.desc())
             },
             (None, Some(a), Some(f), _) => {
                 let start_cursor = decode_cursor(&a)?;
@@ -400,14 +419,17 @@ graphql_object!(Query: Context |&self| {
 
                 boxed_query
                     .filter(messages_flume_seq.gt(start_cursor))
+                    .order(messages_flume_seq.asc())
             },
             (None, None, Some(f), None) => {
                 next = *f;
                 boxed_query
+                    .order(messages_flume_seq.asc()) 
             },
             (None, None, None, Some(l)) => {
                 next = *l;
                 boxed_query
+                    .order(messages_flume_seq.desc()) 
             },
             (_,_ , Some(_), Some(_)) => {
                 Err("first and last can't be set at the same time.")?
@@ -422,7 +444,6 @@ graphql_object!(Query: Context |&self| {
 
         let results = boxed_query
             .filter(messages_content_type.eq("post"))
-            .order(messages_flume_seq.desc()) // Hmmm should we switch this off when we're using a query and order by query ranking value?
             .limit(next as i64)
             .distinct()
             .load::<(i32, Option<i64>)>(&connection)?;

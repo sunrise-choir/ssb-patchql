@@ -39,11 +39,18 @@ pub fn append_item(
     seq: FlumeSequence,
     item: &[u8],
 ) -> Result<(), Error> {
-    let message: SsbMessage = serde_json::from_slice(item).unwrap();
+    let result  = serde_json::from_slice(item);
+
+    // If there are deleted records with all bytes zerod then we should just skip this message.
+    if let Err(_) = result {
+        return Ok(())
+    }
+
+    let message = result.unwrap();
 
     let (is_decrypted, message) = attempt_decryption(message, secret_keys);
 
-    let message_key_id = find_or_create_key(&connection, &message.key).unwrap();
+    let message_key_id = find_or_create_key(&connection, &message.key)?;
     let author_id = find_or_create_author(&connection, &message.value.author)?;
 
     // votes are a kind of backlink, but we want to put them in their own table.

@@ -7,7 +7,6 @@ extern crate juniper_codegen;
 extern crate juniper;
 #[macro_use]
 extern crate log as irrelevant_log;
-extern crate staticfile;
 #[macro_use]
 extern crate diesel_migrations;
 extern crate serde;
