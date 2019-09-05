@@ -35,8 +35,8 @@
 //
 //    io.add_method("query", move |params: Params| {
 //        let request: GraphQLRequest = params.parse()?;
-//        
-//        let root_node = RootNode::new(Query, DbMutation::default() ); 
+//
+//        let root_node = RootNode::new(Query, DbMutation::default() );
 //        let response = request.execute(&root_node, &context);
 //
 //        let val: Value = serde_json::to_value(response).unwrap();
@@ -46,8 +46,8 @@
 //
 //    io.add_method("process", move |params: Params| {
 //        let request: GraphQLRequest = params.parse()?;
-//        
-//        let root_node = RootNode::new(Query, DbMutation::default() ); 
+//
+//        let root_node = RootNode::new(Query, DbMutation::default() );
 //        let response = request.execute(&root_node, &context2);
 //
 //        let val: Value = serde_json::to_value(response).unwrap();

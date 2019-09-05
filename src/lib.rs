@@ -15,16 +15,16 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 
-pub mod graphql;
-pub mod db;
 mod cursor;
+pub mod db;
+pub mod graphql;
 mod ssb_message;
 
-use juniper::http::GraphQLRequest;
-use juniper::RootNode;
 use db::Context;
 use graphql::db::DbMutation;
 use graphql::root::*;
+use juniper::http::GraphQLRequest;
+use juniper::RootNode;
 use serde_json::Error;
 
 #[derive(Clone)]
@@ -51,4 +51,3 @@ impl Patchql {
         serde_json::to_string(&response)
     }
 }
-

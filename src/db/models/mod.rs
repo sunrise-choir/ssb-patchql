@@ -112,13 +112,13 @@ fn attempt_decryption(mut message: SsbMessage, secret_keys: &[SecretKey]) -> (bo
 
 #[cfg(test)]
 mod tests {
-    use crate::db::open_connection;
-    use crate::diesel::prelude::*;
     use crate::db::execute_pragmas;
     use crate::db::models::keys::Key;
     use crate::db::models::messages::Message;
+    use crate::db::open_connection;
     use crate::db::schema::keys::dsl::*;
     use crate::db::schema::messages::dsl::*;
+    use crate::diesel::prelude::*;
     use diesel::result::Error;
     use dotenv::dotenv;
     use std::env;

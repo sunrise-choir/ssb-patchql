@@ -236,11 +236,8 @@ graphql_object!(Author: Context |&self| {
     }
 });
 
-
 #[cfg(test)]
 mod tests {
     #[test]
-    fn blocks(){
-    }
+    fn blocks() {}
 }
-

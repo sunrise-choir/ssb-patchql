@@ -1,4 +1,3 @@
-use juniper::FieldResult;
 use super::post::*;
 use crate::db::schema::messages::dsl::{
     content_type as messages_content_type, key_id as messages_key_id, messages as messages_table,
@@ -6,6 +5,7 @@ use crate::db::schema::messages::dsl::{
 };
 use crate::db::Context;
 use diesel::prelude::*;
+use juniper::FieldResult;
 
 #[derive(Default)]
 pub struct Thread {
