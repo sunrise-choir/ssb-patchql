@@ -70,7 +70,6 @@ graphql_object!(DbMutation: Context |&self| {
                             append_item(&(*connection), &context.keys, log_entry.offset, &log_entry.data).unwrap_or_else(|err|{
                                 println!("error appending item. offset: {:?}, data: {:?}, err: {:?}", log_entry.offset, log_entry.data, err);
                                 panic!("error appending item")
-                            
                             });
                         });
                     Ok(())

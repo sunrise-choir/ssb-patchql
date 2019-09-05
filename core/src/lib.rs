@@ -18,6 +18,7 @@ mod cursor;
 pub mod db;
 pub mod graphql;
 mod ssb_message;
+mod utils;
 
 use db::Context;
 use graphql::db::DbMutation;

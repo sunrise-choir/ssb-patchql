@@ -1,7 +1,6 @@
 use super::author::*;
 use super::like::*;
 use crate::db::*;
-use diesel::dsl::sql;
 use diesel::prelude::*;
 use juniper::FieldResult;
 
@@ -14,23 +13,21 @@ use crate::db::schema::links::dsl::{
 };
 use crate::db::schema::messages::dsl::{
     asserted_time as messages_asserted_time, author_id as messages_author_id,
-    content as messages_content, content_type as messages_content_type, fork_key_id,
-    fork_key_id as messages_fork_key_id, key_id as messages_key_id, messages as messages_table,
-    received_time as messages_received_time, root_key_id, root_key_id as messages_root_key_id,
+    content_type as messages_content_type, fork_key_id, fork_key_id as messages_fork_key_id,
+    key_id as messages_key_id, messages as messages_table, received_time as messages_received_time,
+    root_key_id, root_key_id as messages_root_key_id,
 };
 use crate::db::schema::votes::dsl::{
     link_to_key_id as votes_link_to_key_col, votes as votes_table,
 };
+
+use crate::db::models::posts::get_text;
 
 #[derive(Default)]
 pub struct Post {
     pub key_id: i32,
 }
 
-#[derive(Deserialize)]
-struct PostText {
-    text: String,
-}
 graphql_object!(Post: Context |&self| {
 
     description: "A post by an author. Posts may contain text / images etc. Same idea as a facebook / twitter post"
@@ -126,15 +123,8 @@ graphql_object!(Post: Context |&self| {
     /// The text body of the post.
     field text(&executor) -> FieldResult<String> {
         let connection = executor.context().connection.get()?;
-        let content = messages_table
-            .select(sql::<diesel::sql_types::Text>("content"))
-            .filter(messages_key_id.eq(self.key_id))
-            .filter(messages_content.is_not_null())
-            .first::<String>(&connection)?;
-
-        let value: PostText = serde_json::from_str(&content)?;
-
-        Ok(value.text)
+        let text = get_text(&connection, self.key_id)?;
+        Ok(text)
     }
     /// If this post forks from another discussion, the forksFromKey is the id of the message
     /// that it forks from.

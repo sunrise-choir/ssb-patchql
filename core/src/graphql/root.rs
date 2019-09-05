@@ -424,12 +424,12 @@ graphql_object!(Query: Context |&self| {
             (None, None, Some(f), None) => {
                 next = *f;
                 boxed_query
-                    .order(messages_flume_seq.asc()) 
+                    .order(messages_flume_seq.asc())
             },
             (None, None, None, Some(l)) => {
                 next = *l;
                 boxed_query
-                    .order(messages_flume_seq.desc()) 
+                    .order(messages_flume_seq.desc())
             },
             (_,_ , Some(_), Some(_)) => {
                 Err("first and last can't be set at the same time.")?
