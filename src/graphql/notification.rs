@@ -20,14 +20,14 @@ pub struct Notification {
 graphql_object!(Notification: Context |&self| {
 
     field mentions_connection(&executor) -> FieldResult<MentionConnection> {
-        let connection = executor.context().connection.lock()?;
+        let connection = executor.context().connection.get()?;
 
         let count = mentions_table
             .inner_join(messages_table.on(mentions_link_from_key_id.eq(messages_key_id)))
             .select(count_star())
             .filter(mentions_link_to_author_id.eq(self.author_id))
             .filter(messages_flume_seq.gt(self.after_cursor))
-            .first::<i64>(&(*connection))?;
+            .first::<i64>(&connection)?;
 
         Ok(MentionConnection{count: count as i32})
     }

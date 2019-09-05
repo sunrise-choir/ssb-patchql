@@ -59,12 +59,12 @@ graphql_object!(PostEdge: Context |&self| {
 
     /// The cursor for this node
     field cursor(&executor) -> FieldResult<Option<String>> {
-        let connection = executor.context().connection.lock()?;
+        let connection = executor.context().connection.get()?;
 
         let cursor = messages_table
             .select(messages_flume_seq)
             .filter(messages_key_id.eq(self.node.key_id))
-            .first::<Option<i64>>(&(*connection))?
+            .first::<Option<i64>>(&connection)?
             .map(encode_cursor);
 
         Ok(cursor)

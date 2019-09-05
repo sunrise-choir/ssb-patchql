@@ -82,11 +82,10 @@ graphql_object!(DbMutation: Context |&self| {
 pub struct Db {}
 
 graphql_object!(Db: Context |&self| {
-    field latest(&executor) -> Option<f64> {
+    field latest(&executor) -> FieldResult<Option<f64>> {
         //let id = self.id;
-        let context = executor.context();
-        let connection = context.connection.lock().unwrap();
-        get_latest(&connection).unwrap()
+        let connection = executor.context().connection.get()?;
+        Ok(get_latest(&connection).unwrap())
     }
 });
 

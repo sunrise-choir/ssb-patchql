@@ -3,6 +3,7 @@ use diesel::prelude::*;
 use diesel::result::Error;
 use diesel::sqlite::SqliteConnection;
 use diesel_migrations::any_pending_migrations;
+use diesel::r2d2::{PooledConnection, Pool, Builder, ConnectionManager};
 use flumedb::offset_log::OffsetLog;
 use std::sync::{Arc, Mutex};
 use private_box::SecretKey;
@@ -17,7 +18,7 @@ embed_migrations!();
 #[derive(Clone)]
 pub struct Context {
     pub rw_connection: Arc<Mutex<SqliteConnection>>,
-    pub connection: Arc<Mutex<SqliteConnection>>,
+    pub connection: Pool<ConnectionManager<SqliteConnection>>, 
     pub log: Arc<Mutex<OffsetLog<u32>>>,
     pub keys: Vec<SecretKey>,
 }
@@ -34,12 +35,16 @@ impl Context {
         let locked_log_ref = Arc::new(Mutex::new(offset_log));
 
         let rw_connection = open_connection(&to_sqlite_uri(&database_path, "rwc"));
-        let connection = open_connection(&to_sqlite_uri(&database_path, "ro"));
+
+
+        let manager = ConnectionManager::new(&to_sqlite_uri(&database_path, "ro"));
+        let pool = Pool::builder().build(manager).unwrap();
+        //let connection = open_connection(&to_sqlite_uri(&database_path, "ro"));
 
         models::authors::set_is_me(&rw_connection, &pub_key_string).unwrap();
 
         let rw_locked_connection_ref = Arc::new(Mutex::new(rw_connection));
-        let locked_connection_ref = Arc::new(Mutex::new(connection));
+        let locked_connection_ref = pool; 
 
         let secret_key_bytes = base64::decode(&secret_key_string.trim_end_matches(".ed25519"))
             .unwrap_or(vec![0u8]);

@@ -37,9 +37,9 @@ graphql_object!(Post: Context |&self| {
 
     /// The globally unique identifier of this post, derived from the hash of this message.
     field id(&executor) -> FieldResult<String> {
-        let connection = executor.context().connection.lock()?;
+        let connection = executor.context().connection.get()?;
         let key = keys_table.find(self.key_id)
-            .first::<Key>(&(*connection))
+            .first::<Key>(&connection)
             .map(|key| key.key)?;
 
         Ok(key)
@@ -47,22 +47,22 @@ graphql_object!(Post: Context |&self| {
 
     /// The author of this post.
     field author(&executor) -> FieldResult<Author> {
-        let connection = executor.context().connection.lock()?;
+        let connection = executor.context().connection.get()?;
         let author_id = messages_table
             .select(messages_author_id)
             .filter(messages_key_id.eq(self.key_id))
-            .first(&(*connection))?;
+            .first(&connection)?;
 
         Ok(Author{author_id})
     }
 
     /// The likes other authors have published about this post.
     field likes(&executor) -> FieldResult<Vec<Like>> {
-        let connection = executor.context().connection.lock()?;
+        let connection = executor.context().connection.get()?;
 
         let votes: Vec<Vote> = votes_table
             .filter(votes_link_to_key_col.eq(self.key_id))
-            .load(&(*connection))?;
+            .load(&connection)?;
 
         let result = votes
             .iter()
@@ -79,11 +79,11 @@ graphql_object!(Post: Context |&self| {
     }
     /// The number of likes on this post.
     field likes_count(&executor ) -> FieldResult<i32> {
-        let connection = executor.context().connection.lock()?;
+        let connection = executor.context().connection.get()?;
 
         let count = votes_table
             .filter(votes_link_to_key_col.eq(self.key_id))
-            .load::<Vote>(&(*connection))?
+            .load::<Vote>(&connection)?
             .iter()
             .filter(|vote| vote.value == 1)
             .count();
@@ -97,11 +97,11 @@ graphql_object!(Post: Context |&self| {
     /// different timezone, or they might be deliberately setting an incorrect published time for
     /// some reason, eg. to prevent leaking meta-data.
     field asserted_timestamp(&executor) -> FieldResult<Option<f64>> {
-        let connection = executor.context().connection.lock()?;
+        let connection = executor.context().connection.get()?;
         let time = messages_table
             .select(messages_asserted_time)
             .filter(messages_key_id.eq(self.key_id))
-            .first::<Option<f64>>(&(*connection))?;
+            .first::<Option<f64>>(&connection)?;
 
         Ok(time)
     }
@@ -114,23 +114,23 @@ graphql_object!(Post: Context |&self| {
     /// range but has been on the network for a long time and you download their entire feed in one
     /// go.
     field received_timestamp(&executor) -> FieldResult<f64> {
-        let connection = executor.context().connection.lock()?;
+        let connection = executor.context().connection.get()?;
         let time = messages_table
             .select(messages_received_time)
             .filter(messages_key_id.eq(self.key_id))
-            .first::<f64>(&(*connection))?;
+            .first::<f64>(&connection)?;
 
         Ok(time)
     }
 
     /// The text body of the post.
     field text(&executor) -> FieldResult<String> {
-        let connection = executor.context().connection.lock()?;
+        let connection = executor.context().connection.get()?;
         let content = messages_table
             .select(sql::<diesel::sql_types::Text>("content"))
             .filter(messages_key_id.eq(self.key_id))
             .filter(messages_content.is_not_null())
-            .first::<String>(&(*connection))?;
+            .first::<String>(&connection)?;
 
         let value: PostText = serde_json::from_str(&content)?;
 
@@ -139,35 +139,35 @@ graphql_object!(Post: Context |&self| {
     /// If this post forks from another discussion, the forksFromKey is the id of the message
     /// that it forks from.
     field forks_from_key(&executor) -> FieldResult<Option<String>> {
-        let connection = executor.context().connection.lock()?;
+        let connection = executor.context().connection.get()?;
         let fork_key = messages_table
             .inner_join(keys_table.on(
                     messages_fork_key_id.eq(keys_id)
                     ))
             .select(keys_key)
             .filter(messages_key_id.eq(self.key_id))
-            .first::<String>(&(*connection))
+            .first::<String>(&connection)
             .optional()?;
         Ok(fork_key)
     }
     /// If this post is a part of a thread then the root_key is the id of the messsage that started
     /// the thread.
     field root_key(&executor) -> FieldResult<Option<String>> {
-        let connection = executor.context().connection.lock()?;
+        let connection = executor.context().connection.get()?;
         let root_key = messages_table
             .inner_join(keys_table.on(
                     messages_root_key_id.nullable().eq(keys_id)
                     ))
             .select(keys_key)
             .filter(messages_key_id.eq(self.key_id))
-            .first::<String>(&(*connection))
+            .first::<String>(&connection)
             .optional()?;
 
         Ok(root_key)
     }
     /// Any other messages outside this thread that link / reference this one.
     field references(&executor) -> FieldResult<Vec<Post>> {
-        let connection = executor.context().connection.lock()?;
+        let connection = executor.context().connection.get()?;
 
         let posts = links_table
             .inner_join(messages_table.on(
@@ -187,7 +187,7 @@ graphql_object!(Post: Context |&self| {
                 fork_key_id.is_not_null().and(fork_key_id.ne(self.key_id))
                     .or(fork_key_id.is_null())
                 )
-            .load::<i32>(&(*connection))?
+            .load::<i32>(&connection)?
             .iter()
             .map(|key_id|{
                 Post{
@@ -200,13 +200,13 @@ graphql_object!(Post: Context |&self| {
     }
     /// Any other threads that have forked from this one.
     field forks(&executor) -> FieldResult<Vec<Post>> {
-        let connection = executor.context().connection.lock()?;
+        let connection = executor.context().connection.get()?;
 
         // first, we need this Post's root key id
         let this_root_key_id = messages_table
             .select(root_key_id)
             .filter(messages_key_id.eq(self.key_id))
-            .first::<Option<i32>>(&(*connection))?;
+            .first::<Option<i32>>(&connection)?;
 
         let posts = messages_table
             .select(messages_key_id)
@@ -215,7 +215,7 @@ graphql_object!(Post: Context |&self| {
             .filter(messages_content_type.ne("vote"))
             .filter(root_key_id.eq(self.key_id)) // A fork message will have its root set pointing to this message
             .filter(fork_key_id.eq(this_root_key_id)) // A fork message will have its fork key pointing at the same root message as this one's root.
-            .load::<i32>(&(*connection))?
+            .load::<i32>(&connection)?
             .iter()
             .map(|key_id|{
                 Post{

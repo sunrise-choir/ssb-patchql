@@ -114,11 +114,11 @@ fn attempt_decryption(mut message: SsbMessage, secret_keys: &[SecretKey]) -> (bo
 mod tests {
     use crate::db::open_connection;
     use crate::diesel::prelude::*;
-    use crate::execute_pragmas;
-    use crate::models::keys::Key;
-    use crate::models::messages::Message;
-    use crate::schema::keys::dsl::*;
-    use crate::schema::messages::dsl::*;
+    use crate::db::execute_pragmas;
+    use crate::db::models::keys::Key;
+    use crate::db::models::messages::Message;
+    use crate::db::schema::keys::dsl::*;
+    use crate::db::schema::messages::dsl::*;
     use diesel::result::Error;
     use dotenv::dotenv;
     use std::env;
@@ -164,7 +164,7 @@ mod tests {
         let connection = establish_connection();
         connection.test_transaction::<_, Error, _>(|| {
             diesel::insert_or_ignore_into(keys)
-                .values((crate::schema::keys::id.eq(0), key.eq("piet")))
+                .values((crate::db::schema::keys::id.eq(0), key.eq("piet")))
                 .execute(&connection)?;
 
             let results = keys.load::<Key>(&connection).expect("Error loading posts");

@@ -44,46 +44,46 @@ graphql_object!(Author: Context |&self| {
 
     /// The self assigned name of the author, if given.
     field name(&executor) -> FieldResult<Option<String>> {
-        let connection = executor.context().connection.lock().unwrap();
-        let name = get_author_abouts::<AboutName>(&(*connection), self.author_id)?;
+        let connection = &executor.context().connection.get()?;
+        let name = get_author_abouts::<AboutName>(&connection, self.author_id)?;
         Ok(name)
     }
     /// The self assigned description of the author, if given.
     field description(&executor) -> FieldResult<Option<String>> {
-        let connection = executor.context().connection.lock().unwrap();
-        let description = get_author_abouts::<AboutDescription>(&(*connection), self.author_id)?;
+        let connection = &executor.context().connection.get()?;
+        let description = get_author_abouts::<AboutDescription>(&connection, self.author_id)?;
         Ok(description)
     }
     /// The self assigned image_link of the author, if given.
     field image_link(&executor) -> FieldResult<Option<String>> {
-        let connection = executor.context().connection.lock().unwrap();
-        let image_link = get_author_abouts::<AboutImage>(&(*connection), self.author_id)?;
+        let connection = &executor.context().connection.get()?;
+        let image_link = get_author_abouts::<AboutImage>(&connection, self.author_id)?;
         Ok(image_link)
     }
     /// The public key of the author on the SSB network.
     field id(&executor) -> FieldResult<String> {
-        let connection = executor.context().connection.lock().unwrap();
+        let connection = &executor.context().connection.get()?;
         let id = authors_table
             .select(authors_author)
             .filter(authors_id.eq(self.author_id))
-            .first::<String>(&(*connection))?;
+            .first::<String>(connection)?;
         Ok(id)
     }
     /// The author's relationship toward another author. Eg, Does this author block the other?
     field contact_status_to(&executor, other_author: String) -> FieldResult<PublicPrivateContactStatus> {
 
-        let connection = executor.context().connection.lock().unwrap();
+        let connection = &executor.context().connection.get()?;
 
         let other_author_id = authors_table
             .select(authors_id)
             .filter(authors_author.eq(other_author))
-            .first::<Option<i32>>(&(*connection))?;
+            .first::<Option<i32>>(connection)?;
 
         let state = contacts_table
             .select(contacts_state)
             .filter(contacts_author_id.eq(self.author_id))
             .filter(contacts_contact_author_id.nullable().eq(other_author_id))
-            .first::<Option<i32>>(&(*connection))
+            .first::<Option<i32>>(connection)
             .optional()?;
 
         let status = match state {
@@ -113,18 +113,18 @@ graphql_object!(Author: Context |&self| {
     /// Another author's relationship toward this author. Eg, do they block this author?
     field contact_status_from(&executor, other_author: String) -> FieldResult<PublicPrivateContactStatus> {
 
-        let connection = executor.context().connection.lock().unwrap();
+        let connection = &executor.context().connection.get()?;
 
         let other_author_id = authors_table
             .select(authors_id)
             .filter(authors_author.eq(other_author))
-            .first::<Option<i32>>(&(*connection))?;
+            .first::<Option<i32>>(connection)?;
 
         let state = contacts_table
             .select(contacts_state)
             .filter(contacts_contact_author_id.eq(self.author_id))
             .filter(contacts_author_id.nullable().eq(other_author_id))
-            .first::<Option<i32>>(&(*connection))
+            .first::<Option<i32>>(connection)
             .optional()?;
 
         let status = match state {
@@ -155,7 +155,7 @@ graphql_object!(Author: Context |&self| {
 
     /// The authors that this author follows. 
     field follows(&executor) -> FieldResult<Vec<Author>> {
-        let connection = executor.context().connection.lock().unwrap();
+        let connection = &executor.context().connection.get()?;
 
         let authors = contacts_table
             .inner_join(
@@ -164,7 +164,7 @@ graphql_object!(Author: Context |&self| {
             .select(contacts_contact_author_id)
             .filter(authors_id.eq(self.author_id))
             .filter(contacts_state.eq(1))
-            .load::<i32>(&(*connection))?
+            .load::<i32>(connection)?
             .into_iter()
             .map(|author_id|{
                 Author{author_id}
@@ -175,7 +175,7 @@ graphql_object!(Author: Context |&self| {
     }
     /// The authors that this author blocks. 
     field blocks(&executor) -> FieldResult<Vec<Author>> {
-        let connection = executor.context().connection.lock().unwrap();
+        let connection = &executor.context().connection.get()?;
 
         let authors = authors_table
             .inner_join(
@@ -184,7 +184,7 @@ graphql_object!(Author: Context |&self| {
             .select(contacts_contact_author_id)
             .filter(authors_id.eq(self.author_id))
             .filter(contacts_state.eq(-1))
-            .load::<i32>(&(*connection))?
+            .load::<i32>(connection)?
             .into_iter()
             .map(|author_id|{
                 Author{author_id}
@@ -195,7 +195,7 @@ graphql_object!(Author: Context |&self| {
     }
     /// Other authors that follow this author.
     field followedBy(&executor) -> FieldResult<Vec<Author>> {
-        let connection = executor.context().connection.lock().unwrap();
+        let connection = &executor.context().connection.get()?;
 
         let authors = authors_table
             .inner_join(
@@ -204,7 +204,7 @@ graphql_object!(Author: Context |&self| {
             .select(contacts_author_id)
             .filter(authors_id.eq(self.author_id))
             .filter(contacts_state.eq(1))
-            .load::<i32>(&(*connection))?
+            .load::<i32>(connection)?
             .into_iter()
             .map(|author_id|{
                 Author{author_id}
@@ -216,7 +216,7 @@ graphql_object!(Author: Context |&self| {
     /// Other authors that block this author.
     field blockedBy(&executor) -> FieldResult<Vec<Author>> {
 
-        let connection = executor.context().connection.lock().unwrap();
+        let connection = &executor.context().connection.get()?;
 
         let authors = authors_table
             .inner_join(
@@ -225,7 +225,7 @@ graphql_object!(Author: Context |&self| {
             .select(contacts_author_id)
             .filter(authors_id.eq(self.author_id))
             .filter(contacts_state.eq(-1))
-            .load::<i32>(&(*connection))?
+            .load::<i32>(connection)?
             .into_iter()
             .map(|author_id|{
                 Author{author_id}
@@ -235,3 +235,12 @@ graphql_object!(Author: Context |&self| {
         Ok(authors)
     }
 });
+
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn blocks(){
+    }
+}
+

@@ -1,3 +1,4 @@
+use juniper::FieldResult;
 use super::post::*;
 use crate::db::schema::messages::dsl::{
     content_type as messages_content_type, key_id as messages_key_id, messages as messages_table,
@@ -19,20 +20,22 @@ graphql_object!(Thread: Context |&self| {
         &self.root
     }
     /// The reply posts.
-    field replies(&executor) -> Vec<Post>{
-        let connection = executor.context().connection.lock().unwrap();
+    field replies(&executor) -> FieldResult<Vec<Post>>{
+        let connection = executor.context().connection.get()?;
 
-        messages_table
+        let replies = messages_table
             .select(messages_key_id)
             .filter(messages_root_key_id.eq(self.root.key_id))
             .filter(messages_content_type.eq("post"))
-            .load::<i32>(&(*connection))
+            .load::<i32>(&connection)
             .into_iter()
             .flatten()
             .map(|key_id|{
                 Post{key_id}
             })
-            .collect::<Vec<Post>>()
+            .collect::<Vec<Post>>();
+
+        Ok(replies)
     }
     /// Whether or not the messages are encrypted.
     field is_private() -> bool {false}

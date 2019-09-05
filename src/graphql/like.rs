@@ -13,8 +13,6 @@ graphql_object!(Like: Context |&self| {
 
     /// The author of the like
     field author(&executor) -> FieldResult<Author> {
-        let connection = executor.context().connection.lock()?;
-
         let author = Author{author_id: self.author_id};
         Ok(author)
     },

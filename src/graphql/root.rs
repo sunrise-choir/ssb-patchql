@@ -51,11 +51,11 @@ graphql_object!(Query: Context |&self| {
     /// Cursor will be null when the db is empty.
     field db_cursor(&executor) -> FieldResult<Option<String>>{
 
-        let connection = executor.context().connection.lock()?;
+        let connection = executor.context().connection.get()?;
 
         let cursor = messages_table
             .select(max(messages_flume_seq))
-            .first::<Option<i64>>(&(*connection))?
+            .first::<Option<i64>>(&connection)?
             .map(|seq|{
                 encode_cursor(seq)
             });
@@ -67,12 +67,12 @@ graphql_object!(Query: Context |&self| {
     /// in user" on a sytem where you log in.
     field current_author(&executor) -> FieldResult<Option<Author>>{
 
-        let connection = executor.context().connection.lock()?;
+        let connection = executor.context().connection.get()?;
 
         let author = authors_table
             .select(authors_id)
             .filter(authors_is_me.eq(true))
-            .first::<Option<i32>>(&(*connection))?
+            .first::<Option<i32>>(&connection)?
             .map(|author_key_id|{
                 Author{author_id: author_key_id}
             });
@@ -83,7 +83,7 @@ graphql_object!(Query: Context |&self| {
     /// Find a thread by the key string of the root message.
     field thread(&executor, root_id: String, order_by = (OrderBy::Received): OrderBy) -> FieldResult<Option<Thread>> {
 
-        let connection = executor.context().connection.lock()?;
+        let connection = executor.context().connection.get()?;
 
         let thread = keys_table
             .inner_join(messages_table.on(
@@ -91,7 +91,7 @@ graphql_object!(Query: Context |&self| {
                     ))
             .select(messages_key_id)
             .filter(keys_key.eq(root_id.clone()))
-            .first::<i32>(&(*connection))
+            .first::<i32>(&connection)
             .map(|key_id|{
                 let root = Post{key_id};
                 Some(Thread{root})
@@ -135,7 +135,7 @@ graphql_object!(Query: Context |&self| {
         let mut next = 10;
 
         // Get the context from the executor.
-        let connection = executor.context().connection.lock()?;
+        let connection = executor.context().connection.get()?;
 
         let mut query = root_posts_table
             .inner_join(messages_table.on(root_posts_key_id.eq(messages_key_id)))
@@ -147,7 +147,7 @@ graphql_object!(Query: Context |&self| {
             let author_key_ids = authors_table
                 .select(authors_id)
                 .filter(authors_author.eq_any(mentions_authors))
-                .load::<Option<i32>>(&(*connection))?;
+                .load::<Option<i32>>(&connection)?;
 
             let sub_query = reply_posts_table
                 .select(reply_posts_root_post_id)
@@ -292,7 +292,7 @@ graphql_object!(Query: Context |&self| {
 
     /// Find a post by key string.
     field post(&executor, id: String ) -> FieldResult<Option<Post>> {
-        let connection = executor.context().connection.lock()?;
+        let connection = executor.context().connection.get()?;
 
         let post = keys_table
             .inner_join(messages_table.on(
@@ -300,7 +300,7 @@ graphql_object!(Query: Context |&self| {
                     ))
             .select(messages_key_id)
             .filter(keys_key.eq(id.clone()))
-            .first::<i32>(&(*connection))
+            .first::<i32>(&connection)
             .map(|key_id|{
                 Some(Post{key_id})
             })
@@ -337,7 +337,7 @@ graphql_object!(Query: Context |&self| {
         let mut next = 10;
 
         //TODO: Date range
-        let connection = executor.context().connection.lock()?;
+        let connection = executor.context().connection.get()?;
 
         let mut boxed_query = messages_table
             .inner_join(mentions_table.on(mentions_link_from_key_id.eq(messages_key_id)))
@@ -348,7 +348,7 @@ graphql_object!(Query: Context |&self| {
             let author_key_ids = authors_table
                 .select(authors_id)
                 .filter(authors_author.eq_any(mentions_authors))
-                .load::<Option<i32>>(&(*connection))?;
+                .load::<Option<i32>>(&connection)?;
 
             boxed_query = boxed_query
                 .filter(mentions_link_to_author_id.nullable().eq_any(author_key_ids));
@@ -358,7 +358,7 @@ graphql_object!(Query: Context |&self| {
             let matching_texts_keys = texts_table
                 .select(texts_key_id)
                 .filter(sql("text MATCH ").bind::<diesel::sql_types::Text, _>(query_string))
-                .load::<i32>(&(*connection))?;
+                .load::<i32>(&connection)?;
 
             boxed_query = boxed_query
                 .filter(messages_key_id.eq_any(matching_texts_keys));
@@ -380,7 +380,7 @@ graphql_object!(Query: Context |&self| {
             let author_key_ids = authors_table
                 .select(authors_id)
                 .filter(authors_author.eq_any(authors))
-                .load::<Option<i32>>(&(*connection))?;
+                .load::<Option<i32>>(&connection)?;
 
                 boxed_query = boxed_query
                     .filter(messages_author_id.nullable().eq_any(author_key_ids));
@@ -425,7 +425,7 @@ graphql_object!(Query: Context |&self| {
             .order(messages_flume_seq.desc()) // Hmmm should we switch this off when we're using a query and order by query ranking value?
             .limit(next as i64)
             .distinct()
-            .load::<(i32, Option<i64>)>(&(*connection))?;
+            .load::<(i32, Option<i64>)>(&connection)?;
 
         let post_keys = results
             .iter()
@@ -462,12 +462,12 @@ graphql_object!(Query: Context |&self| {
 
     /// Find an author by their public key string.
     field author(&executor, id: String) -> FieldResult<Option<Author>>{
-        let connection = executor.context().connection.lock()?;
+        let connection = executor.context().connection.get()?;
 
         let author = authors_table
             .select(authors_id)
             .filter(authors_author.eq(id))
-            .first::<Option<i32>>(&(*connection))
+            .first::<Option<i32>>(&connection)
             .map(|author_id|{
                 Some(Author{author_id: author_id.unwrap()})
             })
@@ -482,12 +482,12 @@ graphql_object!(Query: Context |&self| {
 
     /// Find all the message types we know about
     field messageTypes(&executor) -> FieldResult<Vec<String>>{
-        let connection = executor.context().connection.lock()?;
+        let connection = executor.context().connection.get()?;
         let results = messages_table
             .select(messages_content_type)
             .filter(messages_content_type.is_not_null())
             .distinct()
-            .load::<Option<String>>(&(*connection))?
+            .load::<Option<String>>(&connection)?
             .into_iter()
             .filter_map(|message_type|{message_type})
             .collect();
@@ -502,14 +502,14 @@ graphql_object!(Query: Context |&self| {
 
     /// Find a message by key string
     field message(&executor, id: String) -> FieldResult<Option<String>> { // TODO: use message type.
-        let connection = executor.context().connection.lock()?;
+        let connection = executor.context().connection.get()?;
         let results = messages_table
             .inner_join(keys_table.on(
                     messages_key_id.nullable().eq(keys_id)
                     ))
             .select(messages_content)
             .filter(keys_key.eq(id))
-            .first::<Option<String>>(&(*connection))?;
+            .first::<Option<String>>(&connection)?;
 
         Ok(results)
     }
