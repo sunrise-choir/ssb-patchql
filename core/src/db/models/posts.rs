@@ -115,7 +115,6 @@ mod tests {
             msg.key = "test_key_123".to_string();
 
             let id = insert_message(&connection, &msg, 1, 1, false, 1).unwrap();
-            insert_post(&connection, &msg, id as i32, 1, 1).unwrap();
             let actual = get_text(&connection, 1).unwrap();
             assert_eq!(actual, expected_text);
             Ok(())

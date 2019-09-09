@@ -12,7 +12,10 @@ Ideally the lib can expose an `add_message` method.
 Interested to see if we still need the mutex for doing RO queries. This might be limited by the borrow checker at the moment. I might have to use r2d2.
 
 Do a spike then. Things to try:
-  - [ ] try out using an r2d2 connection pool for queries.
+  - [x] try out using an r2d2 connection pool for queries.
+  - change the test db helper so that it makes randomly named dbs in the temp folder so that tests can run in parallel.
+  - ask about the android native + apollo problem on S.O.
   - how hard is it to factor stuff out of the graphql folder into the models folder?
     - this might need more of split where it's like gql -> model -> orm
   - how hard is it make factories (is there prior art here with Juniper?)
+  - fix ci

@@ -105,13 +105,19 @@ graphql_object!(Query: Context |&self| {
     /// Eg. if `roots_authored_by` **and** `has_replies_authored_by` are used, you will get threads
     /// where _either_ is true. The selectors are logically OR'd, **not** AND'd.
     ///
+    /// Note that threads are conceptually ordered by time. So `first` will give you the oldest
+    /// threads first. `last` will give you the newest ones. This is how the js stack treats
+    /// ordering too, you need to `reverse` a feed to get the newest ones first.
+    ///
     /// Note that when not passing any options for `before`, `after`, `first` and `last`, the
     /// default is to give you the most recent threads with a default `last` value of 10 threads.
+    ///
     field threads(
         &executor,
-        /// Use a cursor string to get results before the cursor (backwards pagination)
+        /// Use a cursor string to get results before the cursor (backwards pagination, newest
+        /// first)
         before: Option<String>,
-        /// Use a cursor string to get results after the cursor (forwards pagination)
+        /// Use a cursor string to get results after the cursor (forwards pagination, oldest first)
         after: Option<String>,
         /// Limit the number or results to get when using `before`.
         last = (None): Option<i32>,
@@ -135,7 +141,7 @@ graphql_object!(Query: Context |&self| {
 
         //TODO Filtering by date ranges!
 
-        let mut next = 10;
+        let next = 10;
 
         // Get the context from the executor.
         let connection = executor.context().connection.get()?;
@@ -233,33 +239,34 @@ graphql_object!(Query: Context |&self| {
         query = match (&before, &after, last, first) {
             (Some(b), None, Some(l), None ) => {
                 let start_cursor = decode_cursor(&b)?;
-                next = l;
 
                 query
                     .filter(root_posts_flume_seq.lt(start_cursor))
                     .order(root_posts_flume_seq.desc())
+                    .limit(l as i64)
             },
             (None, Some(a), None, Some(f)) => {
                 let start_cursor = decode_cursor(&a)?;
-                next = f;
 
                 query
                     .filter(root_posts_flume_seq.gt(start_cursor))
                     .order(root_posts_flume_seq.asc())
+                    .limit(f as i64)
             },
             (None, None, Some(l), _) => {
-                next = l;
                 query
                     .order(root_posts_flume_seq.desc())
+                    .limit(l as i64)
             },
             (None, None, None, Some(f)) => {
-                next = f;
                 query
                     .order(root_posts_flume_seq.asc())
+                    .limit(f as i64)
             },
             (None, None, None, None) => {
                 query
                     .order(root_posts_flume_seq.desc())
+                    .limit(next as i64)
             },
             (Some(_), Some(_), _, _) => {
                 Err("Before and After can't be set at the same time.")?
@@ -270,7 +277,6 @@ graphql_object!(Query: Context |&self| {
         };
 
         let query = query
-            .limit(next as i64)
             .distinct();
 
 
@@ -330,16 +336,24 @@ graphql_object!(Query: Context |&self| {
     /// Search for posts that match certain filters.
     /// Note that filters for posts are **ANDED** together. Posts meet all the conditions of the
     /// filters to be included in the results.
+    ///
+    /// Note that posts are conceptually ordered by time. So `first` will give you the oldest
+    /// threads first. `last` will give you the newest ones. This is how the js stack treats
+    /// ordering too, you need to `reverse` a feed to get the newest ones first.
+    ///
+    /// Note that when not passing any options for `before`, `after`, `first` and `last`, the
+    /// default is to give you the most recent posts with a default `last` value of 10 posts.
     field posts(
         &executor,
-        /// Use a cursor string to get results before the cursor
+        /// Use a cursor string to get results before the cursor (backwards pagination, newest
+        /// first)
         before: Option<String>,
-        /// Use a cursor string to get results after the cursor
+        /// Use a cursor string to get results after the cursor (forwards pagination, oldest first)
         after: Option<String>,
-        /// Limit the number or results to get.
-        first = (None): Option<i32>,
-        /// Limit the number or results to get.
+        /// Limit the number or results to get when using `before`.
         last = (None): Option<i32>,
+        /// Limit the number or results to get when using `after`.
+        first = (None): Option<i32>,
         /// Find posts that match the query string.
         query: Option<String>,
         /// Find public, private or all threads.
@@ -352,7 +366,7 @@ graphql_object!(Query: Context |&self| {
         order_by = (OrderBy::Received): OrderBy,
     ) -> FieldResult<PostConnection> {
 
-        let mut next = 10;
+        let next = 10;
 
         //TODO: Date range
         let connection = executor.context().connection.get()?;
@@ -407,29 +421,34 @@ graphql_object!(Query: Context |&self| {
         boxed_query = match (&before, &after, &first, &last) {
             (Some(b), None, _, Some(l)) => {
                 let start_cursor = decode_cursor(&b)?;
-                next = *l;
 
                 boxed_query
                     .filter(messages_flume_seq.lt(start_cursor))
                     .order(messages_flume_seq.desc())
+                    .limit(*l as i64)
             },
             (None, Some(a), Some(f), _) => {
                 let start_cursor = decode_cursor(&a)?;
-                next = *f;
 
                 boxed_query
                     .filter(messages_flume_seq.gt(start_cursor))
                     .order(messages_flume_seq.asc())
+                    .limit(*f as i64)
             },
             (None, None, Some(f), None) => {
-                next = *f;
                 boxed_query
                     .order(messages_flume_seq.asc())
+                    .limit(*f as i64)
             },
             (None, None, None, Some(l)) => {
-                next = *l;
                 boxed_query
                     .order(messages_flume_seq.desc())
+                    .limit(*l as i64)
+            },
+            (None, None, None, None) => {
+                boxed_query
+                    .order(messages_flume_seq.desc())
+                    .limit(next as i64)
             },
             (_,_ , Some(_), Some(_)) => {
                 Err("first and last can't be set at the same time.")?
@@ -444,7 +463,6 @@ graphql_object!(Query: Context |&self| {
 
         let results = boxed_query
             .filter(messages_content_type.eq("post"))
-            .limit(next as i64)
             .distinct()
             .load::<(i32, Option<i64>)>(&connection)?;
 

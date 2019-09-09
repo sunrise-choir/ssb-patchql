@@ -4,7 +4,14 @@ use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::result::Error;
 use diesel::sqlite::SqliteConnection;
 use diesel_migrations::any_pending_migrations;
+
+//TODO: This is a hack for now, ideally all this will get tidied up by implementing a
+//common trait for GoOffsetLog and OffsetLog
+#[cfg(not(feature = "ssb-go-log"))]
 use flumedb::offset_log::OffsetLog;
+#[cfg(feature = "ssb-go-log")]
+use flumedb::go_offset_log::GoOffsetLog;
+
 use private_box::SecretKey;
 use std::sync::{Arc, Mutex};
 
@@ -19,7 +26,12 @@ embed_migrations!();
 pub struct Context {
     pub rw_connection: Arc<Mutex<SqliteConnection>>,
     pub connection: Pool<ConnectionManager<SqliteConnection>>,
+
+    #[cfg(not(feature = "ssb-go-log"))]
     pub log: Arc<Mutex<OffsetLog<u32>>>,
+    #[cfg(feature = "ssb-go-log")]
+    pub log: Arc<Mutex<GoOffsetLog>>,
+
     pub keys: Vec<SecretKey>,
 }
 
@@ -30,7 +42,16 @@ impl Context {
         pub_key_string: String,
         secret_key_string: String,
     ) -> Context {
+
+        #[cfg(not(feature = "ssb-go-log"))]
         let offset_log = match OffsetLog::open_read_only(&offset_log_path) {
+            Ok(log) => log,
+            Err(_) => {
+                panic!("failed to open offset log at {}", offset_log_path);
+            }
+        };
+        #[cfg(feature = "ssb-go-log")]
+        let offset_log = match GoOffsetLog::open_read_only(&offset_log_path) {
             Ok(log) => log,
             Err(_) => {
                 panic!("failed to open offset log at {}", offset_log_path);
