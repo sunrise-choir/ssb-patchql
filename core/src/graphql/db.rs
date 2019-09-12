@@ -1,5 +1,4 @@
 use crate::db::*;
-use flumedb::BidirIterator;
 use itertools::Itertools;
 use juniper::FieldResult;
 
@@ -54,34 +53,7 @@ graphql_object!(DbMutation: Context |&self| {
 
         let starting_offset = max_seq.unwrap_or(0);
 
-        //TODO: This is a hack for now, ideally all this will get tidied up by implementing a
-        //common trait for GoOffsetLog and OffsetLog
-        #[cfg(not(feature = "ssb-go-log"))]
-        log.iter_at_offset(starting_offset)
-            .forward()
-            .skip(num_to_skip)
-            .take(chunk_size as usize)
-            .chunks(10000)
-            .into_iter()
-            .for_each(|chunk|{
-                //We use iter tools to set an upper bound on the size of chunks we process here.
-                //It avoids collecting into a vec and consuming way too much memory if the caller
-                //tries to process the entire log.
-                connection.transaction::<_, Error, _>(||{
-                    chunk
-                        .for_each(|log_entry|{
-                            append_item(&(*connection), &context.keys, log_entry.offset, &log_entry.data).unwrap_or_else(|err|{
-                                println!("error appending item. offset: {:?}, data: {:?}, err: {:?}", log_entry.offset, log_entry.data, err);
-                                panic!("error appending item")
-                            });
-                        });
-                    Ok(())
-                }).unwrap();
-            });
 
-        //TODO: This is a hack for now, ideally all this will get tidied up by implementing a
-        //common trait for GoOffsetLog and OffsetLog
-        #[cfg(feature = "ssb-go-log")]
         log.iter_at_offset(starting_offset)
             .skip(num_to_skip)
             .take(chunk_size as usize)

@@ -1,13 +1,13 @@
 extern crate diesel;
 extern crate dotenv;
 extern crate env_logger;
+extern crate iron;
+extern crate iron_cors;
 extern crate juniper_iron;
 extern crate log as irrelevant_log;
-extern crate iron;
 extern crate logger;
-extern crate staticfile;
-extern crate iron_cors;
 extern crate mount;
+extern crate staticfile;
 
 use ssb_patchql_core::{db, graphql};
 
@@ -43,7 +43,12 @@ fn main() {
     let secret_key_string =
         env::var("SSB_SECRET_KEY").expect("SSB_SECRET_KEY environment variable must be set");
 
-    let context = Context::new(offset_log_path, database_url, pub_key_string, secret_key_string);
+    let context = Context::new(
+        offset_log_path,
+        database_url,
+        pub_key_string,
+        secret_key_string,
+    );
 
     let graphql_endpoint =
         GraphQLHandler::new(move |_| Ok(context.clone()), Query, DbMutation::default());

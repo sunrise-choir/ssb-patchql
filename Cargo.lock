@@ -259,7 +259,7 @@ dependencies = [
 [[package]]
 name = "flumedb"
 version = "0.1.1"
-source = "git+https://github.com/sunrise-choir/flumedb-rs?branch=go_offset_log#6c8049864a39480d912ed50d8291922e82c09186"
+source = "git+https://github.com/sunrise-choir/flumedb-rs?branch=go_offset_log#154f43443591e9e74d56df4a2e49758ba1ab54d1"
 dependencies = [
  "bidir_iter 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "buffered_offset_reader 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",

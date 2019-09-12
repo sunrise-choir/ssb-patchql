@@ -5,12 +5,10 @@ use diesel::result::Error;
 use diesel::sqlite::SqliteConnection;
 use diesel_migrations::any_pending_migrations;
 
-//TODO: This is a hack for now, ideally all this will get tidied up by implementing a
-//common trait for GoOffsetLog and OffsetLog
-#[cfg(not(feature = "ssb-go-log"))]
-use flumedb::offset_log::OffsetLog;
 #[cfg(feature = "ssb-go-log")]
 use flumedb::go_offset_log::GoOffsetLog;
+#[cfg(not(feature = "ssb-go-log"))]
+use flumedb::offset_log::OffsetLog;
 
 use private_box::SecretKey;
 use std::sync::{Arc, Mutex};
@@ -42,7 +40,6 @@ impl Context {
         pub_key_string: String,
         secret_key_string: String,
     ) -> Context {
-
         #[cfg(not(feature = "ssb-go-log"))]
         let offset_log = match OffsetLog::open_read_only(&offset_log_path) {
             Ok(log) => log,
