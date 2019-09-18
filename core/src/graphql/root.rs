@@ -148,7 +148,7 @@ graphql_object!(Query: Context |&self| {
 
         let mut query = root_posts_table
             .inner_join(messages_table.on(root_posts_key_id.eq(messages_key_id)))
-            .inner_join(mentions_table.on(mentions_link_from_key_id.eq(messages_key_id)))
+            .left_join(mentions_table.on(mentions_link_from_key_id.eq(messages_key_id)))
             .select((root_posts_key_id, root_posts_flume_seq))
             .into_boxed();
 
@@ -372,7 +372,7 @@ graphql_object!(Query: Context |&self| {
         let connection = executor.context().connection.get()?;
 
         let mut boxed_query = messages_table
-            .inner_join(mentions_table.on(mentions_link_from_key_id.eq(messages_key_id)))
+            .left_join(mentions_table.on(mentions_link_from_key_id.eq(messages_key_id)))
             .select((messages_key_id, messages_flume_seq))
             .into_boxed();
 
