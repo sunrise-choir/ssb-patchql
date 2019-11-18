@@ -41,6 +41,7 @@ table! {
 table! {
     root_posts (flume_seq) {
         flume_seq -> BigInt,
+        asserted_timestamp -> BigInt,
         key_id -> Integer,
         author_id -> Integer,
     }
@@ -49,6 +50,7 @@ table! {
 table! {
     reply_posts (flume_seq) {
         flume_seq -> BigInt,
+        asserted_timestamp -> BigInt,
         key_id -> Integer,
         root_post_id -> Integer,
         author_id -> Integer,

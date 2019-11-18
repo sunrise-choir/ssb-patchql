@@ -97,8 +97,8 @@ impl juniper::Context for Context {}
 pub fn execute_pragmas(connection: &SqliteConnection) -> Result<(), Error> {
     connection.execute("PRAGMA synchronous=normal")?;
     connection.execute("PRAGMA page_size=8192")?;
-    connection.execute("PRAGMA journal_mode=wal")?; //makes ~13% faster.
-    connection.execute("PRAGMA threads=4")?; //makes ~13% faster.
+    connection.execute("PRAGMA journal_mode=wal")?;
+    connection.execute("PRAGMA threads=4")?;
     Ok(())
 }
 

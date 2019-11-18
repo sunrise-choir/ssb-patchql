@@ -18,10 +18,14 @@ use crate::db::schema::messages::dsl::{
     root_key_id, root_key_id as messages_root_key_id,
 };
 use crate::db::schema::votes::dsl::{
-    link_to_key_id as votes_link_to_key_col, votes as votes_table,
+    link_from_author_id as votes_link_from_author_id, link_to_key_id as votes_link_to_key_col,
+    value as votes_value, votes as votes_table,
 };
 
 use crate::db::models::posts::get_text;
+use crate::db::schema::authors::dsl::{
+    authors as authors_table, id as authors_id, is_me as authors_is_me,
+};
 
 #[derive(Default)]
 pub struct Post {
@@ -73,6 +77,23 @@ graphql_object!(Post: Context |&self| {
             .collect();
 
         Ok(result)
+    }
+
+    /// Whether this post is liked by me. 
+    field liked_by_me(&executor ) -> FieldResult<bool> {
+        let connection = executor.context().connection.get()?;
+
+        let count = votes_table
+            .inner_join(authors_table.on(authors_id.eq(votes_link_from_author_id.nullable())))
+            .filter(votes_link_to_key_col.eq(self.key_id))
+            .filter(authors_is_me.is_not_null())
+            .select(votes_value)
+            .load::<i32>(&connection)?
+            .iter()
+            .filter(|vote| vote == &&1)
+            .count();
+
+        Ok(count > 0)
     }
     /// The number of likes on this post.
     field likes_count(&executor ) -> FieldResult<i32> {

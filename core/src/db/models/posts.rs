@@ -20,6 +20,7 @@ use crate::db::schema::messages::dsl::{
 #[primary_key(flume_seq)]
 pub struct RootPost {
     pub flume_seq: i64,
+    pub asserted_timestamp: i64,
     pub key_id: i32,
     pub author_id: i32,
 }
@@ -29,6 +30,7 @@ pub struct RootPost {
 #[primary_key(flume_seq)]
 pub struct ReplyPost {
     pub flume_seq: i64,
+    pub asserted_timestamp: i64,
     pub key_id: i32,
     pub root_post_id: i32,
     pub author_id: i32,
@@ -52,6 +54,7 @@ pub fn insert_post(
             let id = find_or_create_key(&connection, &key).unwrap();
             let reply = ReplyPost {
                 flume_seq: seq,
+                asserted_timestamp: message.value.timestamp as i64,
                 key_id: message_key_id,
                 root_post_id: id,
                 author_id,
@@ -66,6 +69,7 @@ pub fn insert_post(
         _ => {
             let root = RootPost {
                 flume_seq: seq,
+                asserted_timestamp: message.value.timestamp as i64,
                 key_id: message_key_id,
                 author_id,
             };
@@ -85,7 +89,9 @@ pub fn get_text(connection: &SqliteConnection, key_id: i32) -> Result<String, Er
         .filter(messages_content.is_not_null())
         .first::<String>(connection)?;
 
-    let value: PostText = serde_json::from_str(&content).unwrap();
+    let value: PostText = serde_json::from_str(&content).unwrap_or(PostText {
+        text: "patchql error parsing text, this is probably an invalid post message".to_owned(),
+    });
     Ok(value.text)
 }
 

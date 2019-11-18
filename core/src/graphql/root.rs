@@ -3,6 +3,7 @@ use crate::cursor::*;
 use diesel::dsl::max;
 use diesel::dsl::sql;
 use diesel::prelude::*;
+use diesel::sql_types::BigInt;
 use juniper::FieldResult;
 
 use super::author::*;
@@ -28,14 +29,15 @@ use crate::db::schema::messages::dsl::{
     author_id as messages_author_id, content as messages_content,
     content_type as messages_content_type, flume_seq as messages_flume_seq,
     is_decrypted as messages_is_decrypted, key_id as messages_key_id, messages as messages_table,
+    root_key_id as messages_root_key_id,
 };
 use crate::db::schema::reply_posts::dsl::{
     author_id as reply_posts_author_id, reply_posts as reply_posts_table,
     root_post_id as reply_posts_root_post_id,
 };
 use crate::db::schema::root_posts::dsl::{
-    author_id as root_posts_author_id, flume_seq as root_posts_flume_seq,
-    key_id as root_posts_key_id, root_posts as root_posts_table,
+    asserted_timestamp as root_posts_asserted_timestamp, author_id as root_posts_author_id,
+    flume_seq as root_posts_flume_seq, key_id as root_posts_key_id, root_posts as root_posts_table,
 };
 use crate::db::Context;
 
@@ -94,7 +96,34 @@ graphql_object!(Query: Context |&self| {
             .first::<i32>(&connection)
             .map(|key_id|{
                 let root = Post{key_id};
-                Some(Thread{root})
+                Some(Thread{root, cursor: "".to_owned()})
+            })
+            .unwrap_or(None);
+
+        Ok(thread)
+    }
+    /// Find the containing thread for any post message, even if it is the root message.
+    field thread_for_post(&executor, post_id: String, order_by = (OrderBy::Received): OrderBy) -> FieldResult<Option<Thread>> {
+
+        let connection = executor.context().connection.get()?;
+
+        let thread = keys_table
+            .inner_join(messages_table.on(
+                    messages_key_id.nullable().eq(keys_id)
+                    ))
+            .select((messages_key_id, messages_root_key_id))
+            .filter(keys_key.eq(post_id.clone()))
+            .first::<(i32, Option<i32>)>(&connection)
+            .map(|(key_id, root_key_id)|{
+
+                // If the post has a root, use that, otherwise it's a root message.
+                let key = match root_key_id{
+                    Some(key) => key,
+                    None => key_id
+                };
+
+                let root = Post{key_id: key};
+                Some(Thread{root, cursor: "".to_owned()})
             })
             .unwrap_or(None);
 
@@ -135,7 +164,7 @@ graphql_object!(Query: Context |&self| {
         has_replies_authored_by_someone_followed_by: Option<Vec<String>>,
         /// Include threads that mention the provided authors.
         mentions_authors: Option<Vec<String>>,
-        /// Order threads by asserted time, received time or causal ordering.
+        /// Order threads by asserted time or received time.
         order_by = (OrderBy::Received): OrderBy,
         ) -> FieldResult<ThreadConnection> {
 
@@ -149,7 +178,7 @@ graphql_object!(Query: Context |&self| {
         let mut query = root_posts_table
             .inner_join(messages_table.on(root_posts_key_id.eq(messages_key_id)))
             .left_join(mentions_table.on(mentions_link_from_key_id.eq(messages_key_id)))
-            .select((root_posts_key_id, root_posts_flume_seq))
+            .select((root_posts_key_id, root_posts_flume_seq, root_posts_asserted_timestamp))
             .into_boxed();
 
         if let Some(mentions_authors) = mentions_authors {
@@ -236,36 +265,50 @@ graphql_object!(Query: Context |&self| {
             },
         };
 
+        let ordering: Box<dyn BoxableExpression<_, _, SqlType=BigInt>>  = match order_by {
+            OrderBy::Asserted => Box::new(root_posts_asserted_timestamp), 
+            _ => Box::new(root_posts_flume_seq)
+        };
+
+        let filtering: Box<dyn BoxableExpression<_, _, SqlType=BigInt>>  = match order_by {
+            OrderBy::Asserted => Box::new(root_posts_asserted_timestamp), 
+            _ => Box::new(root_posts_flume_seq)
+        };
+        //if we had some function that took b, a, f, l and the order_by
+        //This is hard because the cursor is derived from the flume seq everywhere
+
+
         query = match (&before, &after, last, first) {
             (Some(b), None, Some(l), None ) => {
                 let start_cursor = decode_cursor(&b)?;
 
                 query
-                    .filter(root_posts_flume_seq.lt(start_cursor))
-                    .order(root_posts_flume_seq.desc())
+                    .filter(filtering.lt(start_cursor))
+                    .order(ordering.desc())
                     .limit(l as i64)
             },
             (None, Some(a), None, Some(f)) => {
                 let start_cursor = decode_cursor(&a)?;
 
                 query
-                    .filter(root_posts_flume_seq.gt(start_cursor))
-                    .order(root_posts_flume_seq.asc())
+                    .filter(filtering.gt(start_cursor))
+                    .order(ordering.asc())
                     .limit(f as i64)
             },
             (None, None, Some(l), _) => {
                 query
-                    .order(root_posts_flume_seq.desc())
+                    .order(ordering.desc())
                     .limit(l as i64)
             },
             (None, None, None, Some(f)) => {
                 query
-                    .order(root_posts_flume_seq.asc())
+                    .filter(filtering.gt(0))
+                    .order(ordering.asc())
                     .limit(f as i64)
             },
             (None, None, None, None) => {
                 query
-                    .order(root_posts_flume_seq.desc())
+                    .order(ordering.desc())
                     .limit(next as i64)
             },
             (Some(_), Some(_), _, _) => {
@@ -279,26 +322,22 @@ graphql_object!(Query: Context |&self| {
         let query = query
             .distinct();
 
-
         let results = query
-            .load::<(i32, i64)>(&(*connection))?;
+            .load::<(i32, i64, i64)>(&(*connection))?;
 
-        let thread_keys = results
+        let thread_keys_and_cursor = results
             .iter()
-            .map(|(key_id, _)| *key_id)
-            .collect::<Vec<i32>>();
+            .map(|(key_id, seq, timestamp )| {
+                match order_by {
+                    OrderBy::Asserted => (*key_id, encode_cursor(*timestamp)),
+                    _ => (*key_id, encode_cursor(*seq))
+                }
+            })
+            .collect::<Vec<(i32, String)>>();
 
-        let start_cursor = results
-            .first()
-            .map(|(_, seq)| *seq)
-            .map(encode_cursor);
+        let start_cursor = get_start_cursor(&results, &order_by);
 
-        let end_cursor = results
-            .iter()
-            .last()
-            .map(|(_, seq)| *seq)
-            .map(encode_cursor);
-
+        let end_cursor = get_end_cursor(&results, &order_by);
 
         let page_info = PageInfo {
             start_cursor,
@@ -309,8 +348,8 @@ graphql_object!(Query: Context |&self| {
 
         Ok(ThreadConnection {
             next,
-            thread_keys,
-            page_info,
+            thread_keys_and_cursor,
+            page_info
         })
     }
 
@@ -558,3 +597,23 @@ graphql_object!(Query: Context |&self| {
         Err("Not implemented")?
     }
 });
+
+fn get_start_cursor(results: &[(i32, i64, i64)], order_by: &OrderBy) -> Option<String> {
+    return match order_by {
+        OrderBy::Asserted => results
+            .first()
+            .map(|(_, _, timestamp)| *timestamp)
+            .map(encode_cursor),
+        _ => results.first().map(|(_, seq, _)| *seq).map(encode_cursor),
+    };
+}
+
+fn get_end_cursor(results: &[(i32, i64, i64)], order_by: &OrderBy) -> Option<String> {
+    return match order_by {
+        OrderBy::Asserted => results
+            .last()
+            .map(|(_, _, timestamp)| *timestamp)
+            .map(encode_cursor),
+        _ => results.last().map(|(_, seq, _)| *seq).map(encode_cursor),
+    };
+}

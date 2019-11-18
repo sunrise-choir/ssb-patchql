@@ -14,7 +14,7 @@ dotenv = "0.9.0"
 env_logger = "0.6.1"
 iron = "0.6.0"
 iron-cors = "0.8.0"
-juniper_iron = "0.3.0"
+juniper_iron = "0.6.0"
 logger =  {git = "https://github.com/pietgeursen/logger"}
 log = "0.4.6"
 mount = "0.4"

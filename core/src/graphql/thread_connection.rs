@@ -1,20 +1,13 @@
 use super::page_info::PageInfo;
 use super::post::Post;
 use super::thread::Thread;
-use crate::cursor::*;
 use crate::db::Context;
-use diesel::prelude::*;
 use juniper::FieldResult;
 
-use crate::db::schema::messages::dsl::{
-    flume_seq as messages_flume_seq, key_id as messages_key_id, messages as messages_table,
-};
-
-#[derive(Default)]
 pub struct ThreadConnection {
     pub next: i32,
     pub page_info: PageInfo,
-    pub thread_keys: Vec<i32>,
+    pub thread_keys_and_cursor: Vec<(i32, String)>,
 }
 
 graphql_object!(ThreadConnection: Context |&self| {
@@ -22,10 +15,10 @@ graphql_object!(ThreadConnection: Context |&self| {
 
     /// The edges in this connection
     field edges(&executor) -> Vec<ThreadEdge>{
-        self.thread_keys
+        self.thread_keys_and_cursor
             .iter()
-            .map(|key_id|{
-                Thread{root: Post{key_id: *key_id}}
+            .map(|(key_id, cursor)|{
+                Thread{root: Post{key_id: *key_id}, cursor: cursor.to_owned()}
             })
             .map(|thread|{
                 ThreadEdge{
@@ -42,11 +35,10 @@ graphql_object!(ThreadConnection: Context |&self| {
 
     /// The total count of posts in this connection.
     field total_count(&executor) -> i32 {
-        self.thread_keys.len() as i32
+        self.thread_keys_and_cursor.len() as i32
     }
 });
 
-#[derive(Default)]
 pub struct ThreadEdge {
     pub node: Thread,
 }
@@ -60,16 +52,8 @@ graphql_object!(ThreadEdge: Context |&self| {
     }
 
     /// The cursor for this node
-    field cursor(&executor) -> FieldResult<Option<String>> {
-        let connection = executor.context().connection.get()?;
-
-        let cursor = messages_table
-            .select(messages_flume_seq)
-            .filter(messages_key_id.eq(self.node.root.key_id))
-            .first::<Option<i64>>(&connection)?
-            .map(encode_cursor);
-
-        Ok(cursor)
+    field cursor(&executor) -> FieldResult<String> {
+        Ok(self.node.cursor.clone())
     }
 
 });
