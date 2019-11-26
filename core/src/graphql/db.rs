@@ -5,6 +5,7 @@ use juniper::FieldResult;
 use crate::db::models::append_item;
 use diesel::prelude::*;
 use diesel::result::Error;
+use flumedb::iter_at_offset::IterAtOffset;
 
 #[derive(Default)]
 pub struct DbMutation {}
