@@ -13,7 +13,7 @@ use crate::db::schema::messages::dsl::{
 pub struct PostConnection {
     pub next: i32,
     pub page_info: PageInfo,
-    pub post_keys: Vec<i32>,
+    pub post_keys_and_cursor: Vec<(i32, String)>,
 }
 
 graphql_object!(PostConnection: Context |&self| {
@@ -21,14 +21,14 @@ graphql_object!(PostConnection: Context |&self| {
 
     /// The total count of posts in this connection.
     field total_count(&executor) -> i32 {
-        self.post_keys.len() as i32
+        self.post_keys_and_cursor.len() as i32
     }
     /// The nodes in this connection
     field edges(&executor) -> Vec<PostEdge>{
-        self.post_keys
+        self.post_keys_and_cursor
             .iter()
-            .map(|key_id|{
-                Post{key_id: *key_id}
+            .map(|(key_id, cursor)|{
+                Post{key_id: *key_id, cursor: Some(cursor.to_owned())}
             })
             .map(|post|{
                 PostEdge{
@@ -57,17 +57,9 @@ graphql_object!(PostEdge: Context |&self| {
         &self.node
     }
 
+
     /// The cursor for this node
     field cursor(&executor) -> FieldResult<Option<String>> {
-        let connection = executor.context().connection.get()?;
-
-        let cursor = messages_table
-            .select(messages_flume_seq)
-            .filter(messages_key_id.eq(self.node.key_id))
-            .first::<Option<i64>>(&connection)?
-            .map(encode_cursor);
-
-        Ok(cursor)
+        Ok(self.node.cursor.clone())
     }
-
 });

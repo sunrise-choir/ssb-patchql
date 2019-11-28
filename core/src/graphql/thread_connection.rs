@@ -18,7 +18,7 @@ graphql_object!(ThreadConnection: Context |&self| {
         self.thread_keys_and_cursor
             .iter()
             .map(|(key_id, cursor)|{
-                Thread{root: Post{key_id: *key_id}, cursor: cursor.to_owned()}
+                Thread{root: Post{key_id: *key_id, cursor: None}, cursor: cursor.to_owned()}
             })
             .map(|thread|{
                 ThreadEdge{

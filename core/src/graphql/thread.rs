@@ -49,7 +49,7 @@ graphql_object!(Thread: Context |&self| {
 
         let sorted_replies = sorted_reply_keys
             .into_iter()
-            .map(|key_id| Post{key_id})
+            .map(|key_id| Post{key_id, cursor: None})
             .rev()
             .collect();
 

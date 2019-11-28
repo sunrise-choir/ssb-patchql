@@ -30,6 +30,7 @@ use crate::db::schema::authors::dsl::{
 #[derive(Default)]
 pub struct Post {
     pub key_id: i32,
+    pub cursor: Option<String>,
 }
 
 graphql_object!(Post: Context |&self| {
@@ -119,7 +120,8 @@ graphql_object!(Post: Context |&self| {
         let time = messages_table
             .select(messages_asserted_time)
             .filter(messages_key_id.eq(self.key_id))
-            .first::<Option<f64>>(&connection)?;
+            .first::<Option<i64>>(&connection)?
+            .map(|n| n as f64);
 
         Ok(time)
     }
@@ -136,9 +138,9 @@ graphql_object!(Post: Context |&self| {
         let time = messages_table
             .select(messages_received_time)
             .filter(messages_key_id.eq(self.key_id))
-            .first::<f64>(&connection)?;
+            .first::<i64>(&connection)?;
 
-        Ok(time)
+        Ok(time as f64)
     }
 
     /// The text body of the post.
@@ -202,7 +204,8 @@ graphql_object!(Post: Context |&self| {
             .iter()
             .map(|key_id|{
                 Post{
-                    key_id: *key_id
+                    key_id: *key_id,
+                    cursor: None
                 }
             })
             .collect::<Vec<Post>>();
@@ -230,7 +233,8 @@ graphql_object!(Post: Context |&self| {
             .iter()
             .map(|key_id|{
                 Post{
-                    key_id: *key_id
+                    key_id: *key_id,
+                    cursor: None
                 }
             })
             .collect::<Vec<Post>>();

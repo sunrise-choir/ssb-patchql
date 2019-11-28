@@ -3,7 +3,7 @@ use crate::cursor::*;
 use diesel::dsl::max;
 use diesel::dsl::sql;
 use diesel::prelude::*;
-use diesel::sql_types::BigInt;
+use diesel::sql_types::{BigInt, Nullable};
 use juniper::FieldResult;
 
 use super::author::*;
@@ -30,6 +30,7 @@ use crate::db::schema::messages::dsl::{
     content_type as messages_content_type, flume_seq as messages_flume_seq,
     is_decrypted as messages_is_decrypted, key_id as messages_key_id, messages as messages_table,
     root_key_id as messages_root_key_id,
+    asserted_time as messages_asserted_time,
 };
 use crate::db::schema::reply_posts::dsl::{
     author_id as reply_posts_author_id, reply_posts as reply_posts_table,
@@ -95,7 +96,7 @@ graphql_object!(Query: Context |&self| {
             .filter(keys_key.eq(root_id.clone()))
             .first::<i32>(&connection)
             .map(|key_id|{
-                let root = Post{key_id};
+                let root = Post{key_id, cursor: None};
                 Some(Thread{root, cursor: "".to_owned()})
             })
             .unwrap_or(None);
@@ -122,7 +123,7 @@ graphql_object!(Query: Context |&self| {
                     None => key_id
                 };
 
-                let root = Post{key_id: key};
+                let root = Post{key_id: key, cursor: None};
                 Some(Thread{root, cursor: "".to_owned()})
             })
             .unwrap_or(None);
@@ -274,9 +275,6 @@ graphql_object!(Query: Context |&self| {
             OrderBy::Asserted => Box::new(root_posts_asserted_timestamp), 
             _ => Box::new(root_posts_flume_seq)
         };
-        //if we had some function that took b, a, f, l and the order_by
-        //This is hard because the cursor is derived from the flume seq everywhere
-
 
         query = match (&before, &after, last, first) {
             (Some(b), None, Some(l), None ) => {
@@ -336,7 +334,6 @@ graphql_object!(Query: Context |&self| {
             .collect::<Vec<(i32, String)>>();
 
         let start_cursor = get_start_cursor(&results, &order_by);
-
         let end_cursor = get_end_cursor(&results, &order_by);
 
         let page_info = PageInfo {
@@ -365,7 +362,7 @@ graphql_object!(Query: Context |&self| {
             .filter(keys_key.eq(id.clone()))
             .first::<i32>(&connection)
             .map(|key_id|{
-                Some(Post{key_id})
+                Some(Post{key_id, cursor: None})
             })
             .unwrap_or(None);
 
@@ -412,7 +409,7 @@ graphql_object!(Query: Context |&self| {
 
         let mut boxed_query = messages_table
             .left_join(mentions_table.on(mentions_link_from_key_id.eq(messages_key_id)))
-            .select((messages_key_id, messages_flume_seq))
+            .select((messages_key_id, messages_flume_seq, messages_asserted_time))
             .into_boxed();
 
         if let Some(mentions_authors) = mentions_authors {
@@ -457,71 +454,67 @@ graphql_object!(Query: Context |&self| {
                     .filter(messages_author_id.nullable().eq_any(author_key_ids));
         }
 
-        boxed_query = match (&before, &after, &first, &last) {
-            (Some(b), None, _, Some(l)) => {
+        let ordering: Box<dyn BoxableExpression<_, _, SqlType=Nullable<BigInt>>>  = match order_by {
+            OrderBy::Asserted => Box::new(messages_asserted_time), 
+            _ => Box::new(messages_flume_seq)
+        };
+
+        let filtering: Box<dyn BoxableExpression<_, _, SqlType=Nullable<BigInt>>>  = match order_by {
+            OrderBy::Asserted => Box::new(messages_asserted_time), 
+            _ => Box::new(messages_flume_seq)
+        };
+
+        boxed_query = match (&before, &after, last, first) {
+            (Some(b), None, Some(l), None ) => {
                 let start_cursor = decode_cursor(&b)?;
 
                 boxed_query
-                    .filter(messages_flume_seq.lt(start_cursor))
-                    .order(messages_flume_seq.desc())
-                    .limit(*l as i64)
+                    .filter(filtering.lt(start_cursor))
+                    .order(ordering.desc())
+                    .limit(l as i64)
             },
-            (None, Some(a), Some(f), _) => {
+            (None, Some(a), None, Some(f)) => {
                 let start_cursor = decode_cursor(&a)?;
 
                 boxed_query
-                    .filter(messages_flume_seq.gt(start_cursor))
-                    .order(messages_flume_seq.asc())
-                    .limit(*f as i64)
+                    .filter(filtering.gt(start_cursor))
+                    .order(ordering.asc())
+                    .limit(f as i64)
             },
-            (None, None, Some(f), None) => {
+            (None, None, Some(l), _) => {
                 boxed_query
-                    .order(messages_flume_seq.asc())
-                    .limit(*f as i64)
+                    .order(ordering.desc())
+                    .limit(l as i64)
             },
-            (None, None, None, Some(l)) => {
+            (None, None, None, Some(f)) => {
                 boxed_query
-                    .order(messages_flume_seq.desc())
-                    .limit(*l as i64)
+                    .filter(filtering.gt(0))
+                    .order(ordering.asc())
+                    .limit(f as i64)
             },
             (None, None, None, None) => {
                 boxed_query
-                    .order(messages_flume_seq.desc())
+                    .order(ordering.desc())
                     .limit(next as i64)
             },
-            (_,_ , Some(_), Some(_)) => {
-                Err("first and last can't be set at the same time.")?
-            }
             (Some(_), Some(_), _, _) => {
                 Err("Before and After can't be set at the same time.")?
             }
-            (_, _, _, _) => {
-                Err("unsupported combination of before, after, first and last")?
-            },
+            _ => {
+                Err("Incorrect combination or before, after, first and last")?
+            }
         };
 
         let results = boxed_query
             .filter(messages_content_type.eq("post"))
             .distinct()
-            .load::<(i32, Option<i64>)>(&connection)?;
+            .load::<(i32, Option<i64>, Option<i64>)>(&connection)?
+            .into_iter()
+            .map(|(key_id, seq, time)| (key_id, seq.unwrap_or(0), time.unwrap_or(0)))
+            .collect::<Vec<_>>();
 
-        let post_keys = results
-            .iter()
-            .map(|(key_id, _)| *key_id)
-            .collect::<Vec<i32>>();
-
-        let start_cursor = results
-            .first()
-            .map(|(_, seq)| {
-                seq.unwrap() //If a message doesn't have a sequence something has gone terribly wrong
-            })
-            .map(encode_cursor);
-
-        let end_cursor = results
-            .iter()
-            .last()
-            .map(|(_, seq)| seq.unwrap())
-            .map(encode_cursor);
+        let start_cursor = get_start_cursor(&results[..], &order_by);
+        let end_cursor = get_end_cursor(&results[..], &order_by);
 
 
         let page_info = PageInfo {
@@ -531,10 +524,19 @@ graphql_object!(Query: Context |&self| {
             has_previous_page: true //TODO make this work.
         };
 
+        let post_keys_and_cursor = results
+            .iter()
+            .map(|(key_id, seq, timestamp )| {
+                match order_by {
+                    OrderBy::Asserted => (*key_id, encode_cursor(*timestamp)),
+                    _ => (*key_id, encode_cursor(*seq))
+                }
+            })
+            .collect::<Vec<(i32, String)>>();
         Ok(PostConnection{
             next,
             page_info,
-            post_keys
+            post_keys_and_cursor
         })
     }
 
