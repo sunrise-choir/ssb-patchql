@@ -147,7 +147,7 @@ Start the server using `$ cargo run`
 
 and in another terminal:
 
-`$ graphql get-schema`
+`$ graphql get-schema; graphql get-schema -o schema.json`
 
 ### Lint the generated schema for errors
 
