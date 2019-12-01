@@ -1,5 +1,5 @@
 # source: http://localhost:8080/graphql
-# timestamp: Sun Dec 01 2019 12:26:19 GMT+0100 (Central European Standard Time)
+# timestamp: Sun Dec 01 2019 13:13:26 GMT+0100 (Central European Standard Time)
 
 schema {
   query: Query
