@@ -5,6 +5,9 @@ use juniper::FieldResult;
 use crate::db::models::append_item;
 use diesel::prelude::*;
 use diesel::result::Error;
+
+// Leave this here, it is used when the go_offset_log feature is enabled.
+#[allow(unused_imports)]
 use flumedb::iter_at_offset::IterAtOffset;
 
 #[derive(Default)]

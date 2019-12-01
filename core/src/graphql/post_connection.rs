@@ -1,13 +1,7 @@
 use super::page_info::PageInfo;
 use super::post::Post;
-use crate::cursor::*;
 use crate::db::Context;
-use diesel::prelude::*;
 use juniper::FieldResult;
-
-use crate::db::schema::messages::dsl::{
-    flume_seq as messages_flume_seq, key_id as messages_key_id, messages as messages_table,
-};
 
 #[derive(Default)]
 pub struct PostConnection {
