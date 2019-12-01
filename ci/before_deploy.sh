@@ -22,7 +22,7 @@ main() {
     cross rustc --manifest-path stdio/Cargo.toml --target $TARGET --release -- -C lto
 
     cp target/$TARGET/release/main $stage/http_server
-    cp target/$TARGET/release/jsonrpc_stdio_server $stage
+    cp target/$TARGET/release/jsonrpc_stdio $stage/jsonrpc_stdio
 
     cd $stage
     tar czf $src/$CRATE_NAME-$TRAVIS_TAG-$TARGET.tar.gz *
