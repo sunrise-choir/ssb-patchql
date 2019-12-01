@@ -17,9 +17,12 @@ main() {
 
     test -f Cargo.lock || cargo generate-lockfile
 
-    cross rustc --bin ssb-patchql --target $TARGET --release -- -C lto
+    #cross rustc --bin ssb-patchql --target $TARGET --release -- -C lto
+    cross rustc --bin main --target $TARGET --release -- -C lto
+    cross rustc --bin jsonrpc_stdio_server --target $TARGET --release -- -C lto
 
-    cp target/$TARGET/release/ssb-patchql $stage/
+    cp target/$TARGET/release/main $stage/http_server
+    cp target/$TARGET/release/jsonrpc_stdio_server $stage
 
     cd $stage
     tar czf $src/$CRATE_NAME-$TRAVIS_TAG-$TARGET.tar.gz *
