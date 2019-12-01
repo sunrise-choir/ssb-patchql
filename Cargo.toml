@@ -3,4 +3,5 @@
 members = [
     "core",
     "http",
+    "stdio"
 ]

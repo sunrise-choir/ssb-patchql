@@ -1,0 +1,22 @@
+[package]
+name = "ssb-patchql-stdio"
+version = "0.1.0"
+authors = ["Piet Geursen <pietgeursen@gmail.com>"]
+edition = "2018"
+
+[features]
+default = []
+ssb-go-log = ["ssb-patchql-core/ssb-go-log"]
+
+[dependencies]
+diesel = { version = "1.4.3", features = ["sqlite", "r2d2"] }
+dotenv = "0.9.0"
+env_logger = "0.6.1"
+iron = "0.6.0"
+iron-cors = "0.8.0"
+juniper = "0.14.0"
+juniper_iron = "0.6.0"
+jsonrpc-stdio-server = { git = "https://github.com/pietgeursen/jsonrpc" }
+logger =  {git = "https://github.com/pietgeursen/logger"}
+log = "0.4.6"
+ssb-patchql-core = {path = "../core"}
