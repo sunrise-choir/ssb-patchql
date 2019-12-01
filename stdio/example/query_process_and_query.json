@@ -1,3 +1,3 @@
-{"jsonrpc": "2.0", "method": "process", "params": { "query": "mutation process { process(chunkSize: 10000){ chunkSize, latestSequence } }" }, "id": 1}
+{"jsonrpc": "2.0", "method": "process", "params": { "query": "mutation process { process(chunkSize: 100000){ chunkSize, latestSequence } }" }, "id": 1}
 {"jsonrpc": "2.0", "method": "query", "params": { "query": "{dbCursor}" }, "id": 2}
 {"jsonrpc": "2.0", "method": "query", "params": { "query": "{ threads(last: 10) { pageInfo{ endCursor } edges { node { root { text likesCount author { name } } } } } }" }, "id": 2}
