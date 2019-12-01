@@ -1,0 +1,1 @@
+{"jsonrpc": "2.0", "method": "say_hello", "params": ["{dbCursor}"], "id": 1}

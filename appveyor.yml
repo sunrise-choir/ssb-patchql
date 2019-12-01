@@ -42,8 +42,8 @@ test_script:
   - if [%APPVEYOR_REPO_TAG%]==[false] (
       cargo build --target %TARGET% &&
       cargo build --target %TARGET% --release &&
-      cargo test --target %TARGET% &&
-      cargo test --target %TARGET% --release &&
+      cargo test --target %TARGET% -- --test-threads=1 &&
+      cargo test --target %TARGET% --release -- --test-threads=1 &&
       cargo run --target %TARGET% &&
       cargo run --target %TARGET% --release
     )
