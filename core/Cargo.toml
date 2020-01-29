@@ -22,7 +22,7 @@ juniper = "0.14.0"
 juniper_codegen = "0.14.0"
 log = "0.4.6"
 ssb-causal-sort = {git="https://github.com/sunrise-choir/ssb-causal-sort"}
-ssb-multiformats = {git="https://github.com/sunrise-choir/ssb-multiformats"}
+ssb-multiformats = "0.1.0"
 serde = "1.0.80"
 serde_derive = "1.0.80"
 serde_json = "1.0.33"
