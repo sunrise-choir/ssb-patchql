@@ -2576,7 +2576,7 @@
   "extensions": {
     "graphql-config": {
       "source": "http://localhost:8080/graphql",
-      "timestamp": "Sun Dec 01 2019 13:13:28 GMT+0100 (Central European Standard Time)"
+      "timestamp": "Fri Jan 24 2020 16:45:39 GMT-0800 (Pacific Standard Time)"
     }
   }
 }
