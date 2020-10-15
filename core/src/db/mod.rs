@@ -10,7 +10,7 @@ use flumedb::go_offset_log::GoOffsetLog;
 #[cfg(not(feature = "ssb-go-log"))]
 use flumedb::offset_log::OffsetLog;
 
-use private_box::SecretKey;
+use private_box::Keypair;
 use std::sync::{Arc, Mutex};
 
 pub mod models;
@@ -30,7 +30,7 @@ pub struct Context {
     #[cfg(feature = "ssb-go-log")]
     pub log: Arc<Mutex<GoOffsetLog>>,
 
-    pub keys: Vec<SecretKey>,
+    pub keys: Vec<Keypair>,
 }
 
 impl Context {
@@ -70,11 +70,11 @@ impl Context {
         let secret_key_bytes =
             base64::decode(&secret_key_string.trim_end_matches(".ed25519")).unwrap_or(vec![0u8]);
 
-        let secret_key = SecretKey::from_slice(&secret_key_bytes).unwrap_or_else(|| {
+        let secret_key = Keypair::from_slice(&secret_key_bytes).unwrap_or_else(|| {
             warn!(
                 "Could not parse valid ssb-secret for decryption. Messages will not be decrypted"
             );
-            SecretKey::from_slice(&[0; 64]).unwrap()
+            Keypair::from_slice(&[0; 64]).unwrap()
         });
 
         let keys = vec![secret_key];

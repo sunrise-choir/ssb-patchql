@@ -16,7 +16,7 @@ use crate::db::{Error, SqliteConnection};
 use crate::ssb_message::*;
 use base64::decode;
 use flumedb::flume_view::Sequence as FlumeSequence;
-use private_box::SecretKey;
+use private_box::Keypair;
 use serde_json::Value;
 
 use abouts::insert_abouts;
@@ -35,7 +35,7 @@ use authors::find_or_create_author;
 
 pub fn append_item(
     connection: &SqliteConnection,
-    secret_keys: &[SecretKey],
+    secret_keys: &[Keypair],
     seq: FlumeSequence,
     item: &[u8],
 ) -> Result<(), Error> {
@@ -90,7 +90,7 @@ pub fn append_item(
     Ok(())
 }
 
-fn attempt_decryption(mut message: SsbMessage, secret_keys: &[SecretKey]) -> (bool, SsbMessage) {
+fn attempt_decryption(mut message: SsbMessage, secret_keys: &[Keypair]) -> (bool, SsbMessage) {
     let mut is_decrypted = false;
 
     message = match message.value.content["type"] {
@@ -103,7 +103,7 @@ fn attempt_decryption(mut message: SsbMessage, secret_keys: &[SecretKey]) -> (bo
             message.value.content = secret_keys
                 .iter()
                 .find_map(|secret_key| private_box::decrypt(&bytes, secret_key))
-                .map(|data| {
+                .map(|ref data| {
                     is_decrypted = true;
                     serde_json::from_slice(&data).unwrap_or(Value::Null) // Whatever was decrypted wasn't json.
                 })
