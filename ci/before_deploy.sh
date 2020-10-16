@@ -18,8 +18,8 @@ main() {
     test -f Cargo.lock || cargo generate-lockfile
 
     #cross rustc --bin ssb-patchql --target $TARGET --release -- -C lto
-    cross rustc --manifest-path http/Cargo.toml --target $TARGET --release -- -C lto
-    cross rustc --manifest-path stdio/Cargo.toml --target $TARGET --release -- -C lto
+    cross rustc --manifest-path http/Cargo.toml --target $TARGET --release
+    cross rustc --manifest-path stdio/Cargo.toml --target $TARGET --release
 
     cp target/$TARGET/release/main $stage/http_server
     cp target/$TARGET/release/json_rpc_stdio $stage/json_rpc_stdio

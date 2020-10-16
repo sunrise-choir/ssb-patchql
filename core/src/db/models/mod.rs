@@ -153,6 +153,8 @@ mod tests {
         let connection = establish_connection();
         connection.test_transaction::<_, Error, _>(|| Ok(()))
     }
+
+    // This can fail when tests are multithreaded use `cargo test -- --test-threads=1` 
     #[test]
     fn find_or_create_key_when_key_does_not_exist() {
         let connection = establish_connection();
